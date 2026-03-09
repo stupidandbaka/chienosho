@@ -1,687 +1,1633 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>知恵の書</title>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0f1117;--surface:#1a1d27;--card:#22252f;--border:#2e3140;--accent:#6c63ff;--accent2:#00d4aa;--text:#e8e9ed;--text2:#9ca0b0;--danger:#ff4757;--warn:#ffa502;--success:#2ed573;--radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4)}
-body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
-.header{background:linear-gradient(135deg,#1a1d27 0%,#2a1f4e 100%);padding:16px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
-.header h1{font-size:1.4rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.header .status-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);animation:pulse 2s infinite}
-.header .status-dot.connected{background:var(--success)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto}
-.tab-btn{padding:12px 20px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:.9rem;white-space:nowrap;transition:all .3s;position:relative}
-.tab-btn:hover{color:var(--text);background:rgba(108,99,255,.1)}
-.tab-btn.active{color:var(--accent)}
-.tab-btn.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px 2px 0 0}
-.main{flex:1;padding:16px;max-width:1200px;margin:0 auto;width:100%}
-.panel{display:none;animation:fadeIn .3s}
-.panel.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
-.card h2{font-size:1.1rem;margin-bottom:12px;color:var(--accent)}
-.card h3{font-size:.95rem;margin-bottom:8px;color:var(--accent2)}
-.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
-.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
-.btn:active{transform:scale(.97)}
-.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
-.btn-primary{background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff}
-.btn-success{background:linear-gradient(135deg,var(--success),#00b894);color:#fff}
-.btn-danger{background:linear-gradient(135deg,var(--danger),#e84393);color:#fff}
-.btn-warn{background:linear-gradient(135deg,var(--warn),#e17055);color:#fff}
-.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
-.btn-sm{padding:6px 12px;font-size:.8rem}
-input[type="text"],input[type="password"],textarea,select{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;transition:border .2s}
-input:focus,textarea:focus{outline:none;border-color:var(--accent)}
-textarea{resize:vertical;min-height:100px;font-family:inherit}
-.input-group{margin-bottom:12px}
-.input-group label{display:block;font-size:.8rem;color:var(--text2);margin-bottom:4px}
-.alert{padding:12px 16px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
-.alert-info{background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);color:#a5a0ff}
-.alert-success{background:rgba(46,213,115,.15);border:1px solid rgba(46,213,115,.3);color:var(--success)}
-.alert-warn{background:rgba(255,165,2,.15);border:1px solid rgba(255,165,2,.3);color:var(--warn)}
-.alert-danger{background:rgba(255,71,87,.15);border:1px solid rgba(255,71,87,.3);color:var(--danger)}
-.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.75rem;font-weight:600}
-.badge-success{background:rgba(46,213,115,.2);color:var(--success)}
-.badge-danger{background:rgba(255,71,87,.2);color:var(--danger)}
-.badge-warn{background:rgba(255,165,2,.2);color:var(--warn)}
-table{width:100%;border-collapse:collapse;font-size:.85rem}
-th{background:var(--surface);padding:10px;text-align:left;font-weight:600;color:var(--text2);border-bottom:2px solid var(--border);position:sticky;top:0}
-td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
-tr:hover{background:rgba(108,99,255,.05)}
-.table-wrap{max-height:60vh;overflow:auto;border-radius:8px;border:1px solid var(--border)}
-.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem}
-.toggle input{display:none}
-.toggle .slider{width:40px;height:22px;background:var(--border);border-radius:11px;position:relative;transition:.3s}
-.toggle .slider::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s}
-.toggle input:checked+.slider{background:var(--accent)}
-.toggle input:checked+.slider::after{left:21px}
-.compare-ui{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
-.compare-side{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px}
-.compare-side h4{font-size:.8rem;color:var(--text2);margin-bottom:8px}
-.loading{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top:2px solid var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.url-link{color:var(--accent2);text-decoration:none;word-break:break-all}
-.url-link:hover{text-decoration:underline}
-.bullet-list{list-style:none;padding:0}
-.bullet-list li{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
-.bullet-list li:last-child{border:none}
-.bullet-text{flex:1}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
-.stat-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
-.stat-card .val{font-size:1.6rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.stat-card .lbl{font-size:.75rem;color:var(--text2);margin-top:4px}
-#toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px}
-.toast{padding:12px 20px;border-radius:8px;color:#fff;font-size:.85rem;animation:slideIn .3s;box-shadow:var(--shadow)}
-.toast-success{background:linear-gradient(135deg,#2ed573,#00b894)}
-.toast-error{background:linear-gradient(135deg,#ff4757,#e84393)}
-.toast-info{background:linear-gradient(135deg,#6c63ff,#8b5cf6)}
-@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
-@media(max-width:600px){.header h1{font-size:1.1rem}.main{padding:8px}.compare-ui{grid-template-columns:1fr}.stat-grid{grid-template-columns:1fr 1fr}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>知恵の書</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module"></script>
+  <script type="module">
+    import * as pdfjsLib from 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs';
+    window.pdfjsLib = pdfjsLib;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
+  </script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --card: #22252f;
+      --border: #2e3140;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --text: #e8e9ed;
+      --text2: #9ca0b0;
+      --danger: #ff4757;
+      --warn: #ffa502;
+      --success: #2ed573;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0, 0, 0, .4)
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Noto Sans JP', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1a1d27 0%, #2a1f4e 100%);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .header h1 {
+      font-size: 1.4rem;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
+
+    .header .sd {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+      animation: pulse 2s infinite
+    }
+
+    .header .sd.on {
+      background: var(--success)
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .4
+      }
+    }
+
+    .tabs {
+      display: flex;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto
+    }
+
+    .tb {
+      padding: 12px 20px;
+      background: none;
+      border: none;
+      color: var(--text2);
+      cursor: pointer;
+      font-size: .9rem;
+      white-space: nowrap;
+      transition: all .3s;
+      position: relative
+    }
+
+    .tb:hover {
+      color: var(--text);
+      background: rgba(108, 99, 255, .1)
+    }
+
+    .tb.active {
+      color: var(--accent)
+    }
+
+    .tb.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px 2px 0 0
+    }
+
+    .main {
+      flex: 1;
+      padding: 16px;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%
+    }
+
+    .pnl {
+      display: none;
+      animation: fadeIn .3s
+    }
+
+    .pnl.active {
+      display: block
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow)
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: var(--accent)
+    }
+
+    .card h3 {
+      font-size: .95rem;
+      margin-bottom: 8px;
+      color: var(--accent2)
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600;
+      transition: all .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.1)
+    }
+
+    .btn:active {
+      transform: scale(.97)
+    }
+
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      transform: none
+    }
+
+    .bp {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff
+    }
+
+    .bs {
+      background: linear-gradient(135deg, var(--success), #00b894);
+      color: #fff
+    }
+
+    .bd {
+      background: linear-gradient(135deg, var(--danger), #e84393);
+      color: #fff
+    }
+
+    .bw {
+      background: linear-gradient(135deg, var(--warn), #e17055);
+      color: #fff
+    }
+
+    .bo {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text)
+    }
+
+    .sm {
+      padding: 6px 12px;
+      font-size: .8rem
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: .9rem;
+      transition: border .2s
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent)
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit
+    }
+
+    .ig {
+      margin-bottom: 12px
+    }
+
+    .ig label {
+      display: block;
+      font-size: .8rem;
+      color: var(--text2);
+      margin-bottom: 4px
+    }
+
+    .al {
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: .85rem;
+      margin-bottom: 12px
+    }
+
+    .ai {
+      background: rgba(108, 99, 255, .15);
+      border: 1px solid rgba(108, 99, 255, .3);
+      color: #a5a0ff
+    }
+
+    .as {
+      background: rgba(46, 213, 115, .15);
+      border: 1px solid rgba(46, 213, 115, .3);
+      color: var(--success)
+    }
+
+    .aw {
+      background: rgba(255, 165, 2, .15);
+      border: 1px solid rgba(255, 165, 2, .3);
+      color: var(--warn)
+    }
+
+    .ad {
+      background: rgba(255, 71, 87, .15);
+      border: 1px solid rgba(255, 71, 87, .3);
+      color: var(--danger)
+    }
+
+    .bg {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: .75rem;
+      font-weight: 600
+    }
+
+    .bgs {
+      background: rgba(46, 213, 115, .2);
+      color: var(--success)
+    }
+
+    .bgd {
+      background: rgba(255, 71, 87, .2);
+      color: var(--danger)
+    }
+
+    .bgw {
+      background: rgba(255, 165, 2, .2);
+      color: var(--warn)
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .85rem
+    }
+
+    th {
+      background: var(--surface);
+      padding: 10px;
+      text-align: left;
+      font-weight: 600;
+      color: var(--text2);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 0
+    }
+
+    td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top
+    }
+
+    tr:hover {
+      background: rgba(108, 99, 255, .05)
+    }
+
+    .tw {
+      max-height: 60vh;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border)
+    }
+
+    .tg {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-size: .85rem
+    }
+
+    .tg input {
+      display: none
+    }
+
+    .tg .sl {
+      width: 40px;
+      height: 22px;
+      background: var(--border);
+      border-radius: 11px;
+      position: relative;
+      transition: .3s
+    }
+
+    .tg .sl::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: #fff;
+      border-radius: 50%;
+      transition: .3s
+    }
+
+    .tg input:checked+.sl {
+      background: var(--accent)
+    }
+
+    .tg input:checked+.sl::after {
+      left: 21px
+    }
+
+    .cu {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0
+    }
+
+    .cs {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px
+    }
+
+    .cs h4 {
+      font-size: .8rem;
+      color: var(--text2);
+      margin-bottom: 8px
+    }
+
+    .ld {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top: 2px solid var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .ul {
+      color: var(--accent2);
+      text-decoration: none;
+      word-break: break-all
+    }
+
+    .ul:hover {
+      text-decoration: underline
+    }
+
+    .sg {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px
+    }
+
+    .sc {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center
+    }
+
+    .sc .v {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
+
+    .sc .l {
+      font-size: .75rem;
+      color: var(--text2);
+      margin-top: 4px
+    }
+
+    .mkd {
+      line-height: 1.6;
+      font-size: 0.95rem;
+    }
+
+    .mkd h1,
+    .mkd h2,
+    .mkd h3 {
+      color: var(--accent);
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+    }
+
+    .mkd p {
+      margin-bottom: 1em;
+    }
+
+    .mkd ul,
+    .mkd ol {
+      margin-left: 20px;
+      margin-bottom: 1em;
+    }
+
+    .mkd li {
+      margin-bottom: 0.25em;
+    }
+
+    .mkd a {
+      color: var(--accent2);
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .mkd a:hover {
+      text-decoration: underline;
+    }
+
+    .mkd strong {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0 4px;
+      border-radius: 4px;
+    }
+
+    #tc {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px
+    }
+
+    .tt {
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: .85rem;
+      animation: sIn .3s;
+      box-shadow: var(--shadow)
+    }
+
+    .ts {
+      background: linear-gradient(135deg, #2ed573, #00b894)
+    }
+
+    .te {
+      background: linear-gradient(135deg, #ff4757, #e84393)
+    }
+
+    .ti {
+      background: linear-gradient(135deg, #6c63ff, #8b5cf6)
+    }
+
+    @keyframes sIn {
+      from {
+        opacity: 0;
+        transform: translateX(40px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .dz {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--text2);
+      transition: all .3s;
+      cursor: pointer;
+      margin-bottom: 12px
+    }
+
+    .dz:hover,
+    .dz.over {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, .08);
+      color: var(--accent)
+    }
+
+    .dz .fn {
+      margin-top: 8px;
+      font-size: .85rem;
+      color: var(--success);
+      font-weight: 600
+    }
+
+    @media(max-width:600px) {
+      .header h1 {
+        font-size: 1.1rem
+      }
+
+      .main {
+        padding: 8px
+      }
+
+      .cu {
+        grid-template-columns: 1fr
+      }
+
+      .sg {
+        grid-template-columns: 1fr 1fr
+      }
+    }
+
+    /* Mobile Enhancements */
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 12px;
+      }
+
+      .header h1 {
+        font-size: 1.2rem;
+      }
+
+      .tabs {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        border-top: 1px solid var(--border) !important;
+        border-bottom: none !important;
+        background: rgba(30, 41, 59, 0.98) !important;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 1000 !important;
+        overflow-x: auto;
+        white-space: nowrap;
+        display: flex !important;
+        padding-bottom: env(safe-area-inset-bottom);
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+      }
+
+      .tb {
+        flex: 1;
+        padding: 12px 0;
+        font-size: 0.8rem;
+        text-align: center;
+        justify-content: center;
+      }
+
+      .main {
+        padding-bottom: 70px;
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+
+      /* Mobile Card Grid for the Table */
+      .m-card {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .m-card:active {
+        background: #1e293b;
+      }
+
+      .m-idx {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        color: var(--text2);
+        font-size: 0.8rem;
+        font-weight: bold;
+      }
+
+      .m-lbl {
+        font-size: 0.75rem;
+        color: var(--text2);
+        display: block;
+        margin-bottom: 2px;
+        margin-top: 8px;
+        font-weight: 600;
+      }
+
+      .m-val {
+        font-size: 0.95rem;
+        line-height: 1.4;
+        word-break: break-all;
+        margin-bottom: 8px;
+      }
+
+      .m-val.empty {
+        color: var(--text2);
+        font-style: italic;
+      }
+
+      .m-act {
+        margin-top: 12px;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        border-top: 1px dashed var(--border);
+        padding-top: 12px;
+      }
+
+      /* Edit Modal */
+      .mo {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg);
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        animation: slideUp 0.3s forwards;
+      }
+
+      .mo-hdr {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg);
+      }
+
+      .mo-bdy {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-bottom: 80px;
+      }
+
+      .mo-inp {
+        width: 100%;
+        background: #0f172a;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 1rem;
+        box-sizing: border-box;
+      }
+
+      .mo-inp:focus {
+        border-color: var(--accent);
+        outline: none;
+      }
+
+      .mo-ftr {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 16px;
+        background: rgba(30, 41, 59, 0.95);
+        backdrop-filter: blur(10px);
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(100%);
+        }
+
+        to {
+          transform: translateY(0);
+        }
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div id="toast-container"></div>
-<div class="header">
-<h1>📖 知恵の書</h1>
-<div class="status-dot" id="headerDot" title="Drive未接続"></div>
-<span style="font-size:.75rem;color:var(--text2)" id="headerStatus">未接続</span>
-</div>
-<div class="tabs" id="tabBar"></div>
-<div class="main" id="mainContent"></div>
-<script>
-// ===== STATE =====
-let knowledgeBase = [];
-let accessToken = null;
-let driveState = {status:'disconnected',appFolderId:null,bookFolderId:null,refFolderId:null,canonicalFileId:null};
-let lastLoadTime = null;
-const TAB_NAMES = ['ホーム','知恵の書','質問','取り込み','設定'];
-let activeTab = 0;
+  <div id="tc"></div>
+  <div class="header">
+    <h1>📖 知恵の書</h1>
+    <div class="sd" id="hd" title="Drive未接続"></div>
+    <span style="font-size:.75rem;color:var(--text2)" id="hs">未接続</span>
+  </div>
+  <div class="tabs" id="tabBar"></div>
+  <div class="main" id="mc"></div>
+  <script>
+    // ===== STATE =====
+    let knowledgeBase = []; let accessToken = null;
+    let driveState = { status: 'disconnected', appFolderId: null, bookFolderId: null, refFolderId: null };
+    let lastLoadTime = null; const TABS = ['ホーム', '知恵の書', '質問', '取り込み', '設定']; let activeTab = 0;
+    let importState = { extracted_text: '', bullets: [], urls: [] };
+    let _uploadedFileUrl = '';
+    let _uploadedFileUrls = [];
+    let hasUnsavedChanges = false;
 
-// ===== SETTINGS =====
-function getSetting(k,d=''){try{return localStorage.getItem('chie_'+k)||d}catch(e){return d}}
-function setSetting(k,v){try{localStorage.setItem('chie_'+k,v)}catch(e){}}
-function getClientId(){return getSetting('client_id')}
-function getGeminiKey(){return getSetting('gemini_key')}
-function getGeminiModel(){return getSetting('gemini_model','gemini-2.0-flash')}
-function getRefreshBeforeAsk(){return getSetting('refresh_before_ask','on')==='on'}
+    const isMobile = () => window.innerWidth <= 768;
+    let _lastMobile = isMobile();
+    window.addEventListener('resize', () => {
+      const m = isMobile();
+      if (_lastMobile !== m) { _lastMobile = m; renderAll(); }
+    });
 
-// ===== TOAST =====
-function toast(msg,type='info'){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast toast-'+type;t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),4000)}
+    // ===== SETTINGS =====
+    function getSetting(k, d = '') { try { return localStorage.getItem('chie_' + k) || d } catch (e) { return d } }
+    function setSetting(k, v) { try { localStorage.setItem('chie_' + k, v) } catch (e) { } }
+    function getClientId() { return getSetting('client_id') }
+    function getGeminiKey() { return getSetting('gemini_key') }
+    function getGeminiModel() { return getSetting('gemini_model', 'gemini-2.5-flash') }
+    function getRefreshBeforeAsk() { return getSetting('refresh_before_ask', 'on') === 'on' }
 
-// ===== PERSIST / RESTORE =====
-function persist(){try{localStorage.setItem('chienosho_data',JSON.stringify(knowledgeBase))}catch(e){}}
-function restore(){try{const d=localStorage.getItem('chienosho_data');if(d)knowledgeBase=JSON.parse(d)}catch(e){knowledgeBase=[]}}
+    // ===== TOAST =====
+    function toast(msg, type = 'info') { const c = document.getElementById('tc'); const t = document.createElement('div'); t.className = 'tt t' + type[0]; t.textContent = msg; c.appendChild(t); setTimeout(() => t.remove(), 4000) }
 
-// ===== EXCEL =====
-function buildWorkbookBlob(){
-  const ws_data=[['情報','記載日','参考文献']];
-  knowledgeBase.forEach(r=>ws_data.push([r.info||'',r.date||'',r.source||'']));
-  const ws=XLSX.utils.aoa_to_sheet(ws_data);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'知恵の書');
-  const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
-  return new Blob([wbout],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-}
-function parseWorkbook(arrayBuffer){
-  const wb=XLSX.read(arrayBuffer,{type:'array'});
-  const ws=wb.Sheets['知恵の書']||wb.Sheets[wb.SheetNames[0]];
-  const rows=XLSX.utils.sheet_to_json(ws,{header:1});
-  const result=[];
-  for(let i=1;i<rows.length;i++){
-    const r=rows[i];
-    if(!r||!r[0])continue;
-    result.push({info:String(r[0]||''),date:String(r[1]||''),source:String(r[2]||'')});
-  }
-  return result;
-}
+    // ===== PERSIST / RESTORE =====
+    function persist() { try { localStorage.setItem('chienosho_data', JSON.stringify(knowledgeBase)) } catch (e) { } }
+    function restore() { try { const d = localStorage.getItem('chienosho_data'); if (d) knowledgeBase = JSON.parse(d) } catch (e) { knowledgeBase = [] } }
 
-// ===== DRIVE HELPERS =====
-async function driveApiFetch(url,opts={}){
-  if(!accessToken)throw new Error('Driveに未接続です');
-  const h=opts.headers||{};
-  h['Authorization']='Bearer '+accessToken;
-  opts.headers=h;
-  const r=await fetch(url,opts);
-  if(!r.ok){const t=await r.text();throw new Error('Drive API エラー: '+r.status+' '+t)}
-  return r;
-}
+    // ===== EXCEL =====
+    function buildWorkbookBlob() {
+      const d = [['情報', '重要語句', 'タグ', '記載日', '参考文献']];
+      knowledgeBase.forEach(r => d.push([r.info || '', r.keywords || '', r.tags || '', r.date || '', r.source || '']));
+      const ws = XLSX.utils.aoa_to_sheet(d); const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '知恵の書');
+      return new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    }
+    function parseWorkbook(ab) {
+      const wb = XLSX.read(ab, { type: 'array' });
+      const ws = wb.Sheets['知恵の書'] || wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }); const res = [];
+      const hdr = rows[0] || [];
+      const ci = { info: 0, kw: -1, tg: -1, dt: -1, src: -1 };
+      hdr.forEach((h, i) => {
+        const s = String(h);
+        if (s.includes('情報')) ci.info = i;
+        else if (s.includes('語句')) ci.kw = i; else if (s.includes('タグ')) ci.tg = i; else if (s.includes('日')) ci.dt = i; else if (s.includes('文献') || s.includes('参照')) ci.src = i;
+      });
+      // Fallback for older files
+      if (ci.dt === -1) ci.dt = ci.kw !== -1 ? (ci.tg !== -1 ? 3 : 2) : 1;
+      if (ci.src === -1) ci.src = ci.kw !== -1 ? (ci.tg !== -1 ? 4 : 3) : 2;
 
-async function findOrCreateFolder(name,parentId){
-  let q="mimeType='application/vnd.google-apps.folder' and name='"+name+"' and trashed=false";
-  if(parentId)q+=" and '"+parentId+"' in parents";
-  else q+=" and 'root' in parents";
-  const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)&spaces=drive');
-  const data=await r.json();
-  if(data.files&&data.files.length>0)return data.files[0].id;
-  const meta={name:name,mimeType:'application/vnd.google-apps.folder'};
-  if(parentId)meta.parents=[parentId];
-  const cr=await driveApiFetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(meta)});
-  const cd=await cr.json();
-  return cd.id;
-}
+      for (let i = 1; i < rows.length; i++) {
+        const r = rows[i]; if (!r || !String(r[ci.info] || '').trim()) continue;
+        res.push({
+          info: String(r[ci.info] || '').trim(),
+          keywords: ci.kw !== -1 ? String(r[ci.kw] || '').trim() : '',
+          tags: ci.tg !== -1 ? String(r[ci.tg] || '').trim() : '',
+          date: ci.dt !== -1 ? String(r[ci.dt] || '').trim() : '',
+          source: ci.src !== -1 ? String(r[ci.src] || '').trim() : ''
+        });
+      }
+      return res;
+    }
 
-async function ensureDriveFolders(){
-  const appFolderId=await findOrCreateFolder('知恵の書app',null);
-  const bookFolderId=await findOrCreateFolder('知恵の書',appFolderId);
-  const refFolderId=await findOrCreateFolder('参考書',appFolderId);
-  driveState.appFolderId=appFolderId;
-  driveState.bookFolderId=bookFolderId;
-  driveState.refFolderId=refFolderId;
-  return{appFolderId,bookFolderId,refFolderId};
-}
+    // ===== DRIVE API =====
+    async function driveApiFetch(url, opts = {}) {
+      if (!accessToken) throw new Error('Driveに未接続です');
+      const h = opts.headers || {}; h['Authorization'] = 'Bearer ' + accessToken; opts.headers = h;
+      if (!opts.cache) opts.cache = 'no-store';
+      const r = await fetch(url, opts);
+      if (!r.ok) { const t = await r.text(); throw new Error('Drive APIエラー: ' + r.status + ' ' + t) }
+      return r;
+    }
+    async function findOrCreateFolder(name, parentId) {
+      let q = "mimeType='application/vnd.google-apps.folder' and name='" + name + "' and trashed=false";
+      q += parentId ? " and '" + parentId + "' in parents" : " and 'root' in parents";
+      const r = await driveApiFetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id,name)&spaces=drive');
+      const d = await r.json(); if (d.files && d.files.length > 0) return d.files[0].id;
+      const meta = { name, mimeType: 'application/vnd.google-apps.folder' }; if (parentId) meta.parents = [parentId];
+      const cr = await driveApiFetch('https://www.googleapis.com/drive/v3/files', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(meta) });
+      return (await cr.json()).id;
+    }
+    async function ensureDriveFolders() {
+      const a = await findOrCreateFolder('知恵の書app', null);
+      const b = await findOrCreateFolder('知恵の書', a);
+      const c = await findOrCreateFolder('参考書', a);
+      driveState.appFolderId = a; driveState.bookFolderId = b; driveState.refFolderId = c;
+      return { appFolderId: a, bookFolderId: b, refFolderId: c };
+    }
+    async function findNewestFile(bookFolderId) {
+      const q = "name contains '知恵の書' and '" + bookFolderId + "' in parents and (mimeType='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' or mimeType='application/vnd.google-apps.spreadsheet') and trashed=false";
+      const r = await driveApiFetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id,name,modifiedTime,mimeType)&orderBy=modifiedTime desc&pageSize=1&spaces=drive');
+      const d = await r.json(); if (!d.files || d.files.length === 0) return null;
+      return { fileId: d.files[0].id, name: d.files[0].name, modifiedTime: d.files[0].modifiedTime, mimeType: d.files[0].mimeType };
+    }
+    async function downloadDriveFile(f) {
+      let url = 'https://www.googleapis.com/drive/v3/files/' + f.fileId;
+      const cb = '&t=' + Date.now();
+      if (f.mimeType === 'application/vnd.google-apps.spreadsheet') {
+        url += '/export?mimeType=application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' + cb;
+      } else {
+        url += '?alt=media' + cb;
+      }
+      const r = await driveApiFetch(url);
+      return await r.arrayBuffer();
+    }
+    async function createTimestampedFile(bookFolderId, blob) {
+      const n = new Date();
+      const ts = '知恵の書 ' + n.getFullYear() + '.' + (n.getMonth() + 1) + '.' + n.getDate() + '.' + n.getHours() + '.' + n.getMinutes() + '.' + n.getSeconds() + '.xlsx';
+      const meta = { name: ts, parents: [bookFolderId] }; const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' })); form.append('file', blob);
+      const r = await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', { method: 'POST', body: form, headers: {} });
+      return await r.json();
+    }
+    async function loadFromDrive() {
+      if (!accessToken) throw new Error('Driveに未接続です');
+      if (!driveState.bookFolderId) await ensureDriveFolders();
+      const f = await findNewestFile(driveState.bookFolderId);
+      if (!f) { toast('知恵の書ファイルが見つかりません。新規作成されます。', 'i'); return }
+      knowledgeBase = parseWorkbook(await downloadDriveFile(f)); persist();
+      lastLoadTime = new Date().toLocaleString('ja-JP');
+      toast('最新ファイル「' + f.name + '」(' + new Date(f.modifiedTime).toLocaleTimeString('ja-JP') + ') を読み込みました（' + knowledgeBase.length + '件）', 's');
+    }
+    async function saveToDrive(isNew = false) {
+      if (!accessToken) throw new Error('Driveに未接続です');
+      if (!driveState.bookFolderId) await ensureDriveFolders();
+      const blob = buildWorkbookBlob();
 
-async function findCanonicalFile(bookFolderId){
-  const q="name='知恵の書.xlsx' and '"+bookFolderId+"' in parents and trashed=false";
-  const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc&spaces=drive');
-  const data=await r.json();
-  if(!data.files||data.files.length===0)return null;
-  if(data.files.length>1)toast('警告: 同名の正本が複数あります。最新を使用します。','error');
-  return{fileId:data.files[0].id,modifiedTime:data.files[0].modifiedTime};
-}
+      if (isNew) {
+        const d = await createTimestampedFile(driveState.bookFolderId, blob);
+        persist(); hasUnsavedChanges = false; renderAll(); toast('新規ファイルとして保存しました → ' + d.name, 's');
+      } else {
+        const f = await findNewestFile(driveState.bookFolderId);
+        if (f) {
+          await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files/' + f.fileId + '?uploadType=media', {
+            method: 'PATCH', body: blob, headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
+          });
+          persist(); hasUnsavedChanges = false; renderAll(); toast('「' + f.name + '」に上書き保存しました', 's');
+        } else {
+          const d = await createTimestampedFile(driveState.bookFolderId, blob);
+          persist(); hasUnsavedChanges = false; renderAll(); toast('ファイルを新規作成して保存しました', 's');
+        }
+      }
+    }
 
-async function downloadDriveFile(fileId){
-  const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files/'+fileId+'?alt=media');
-  return await r.arrayBuffer();
-}
+    // ===== SEARCH =====
+    function multiTermSearch(query, list, keys, threshold = 0.5) {
+      if (!query) return list.map(item => ({ item, score: 0 }));
+      const terms = query.split(/[\s　]+/).filter(Boolean);
+      if (!terms.length) return list.map(item => ({ item, score: 0 }));
 
-async function uploadOrUpdateCanonical(bookFolderId,blob,existingFileId){
-  if(existingFileId){
-    const r=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files/'+existingFileId+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:blob});
-    const d=await r.json();return d.id;
-  }else{
-    const meta={name:'知恵の書.xlsx',parents:[bookFolderId]};
-    const form=new FormData();
-    form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
-    form.append('file',blob);
-    const r=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',body:form,headers:{}});
-    const d=await r.json();return d.id;
-  }
-}
+      const opts = { keys, threshold, distance: 200, minMatchCharLength: 1, includeScore: true, ignoreLocation: true };
+      let currentList = list;
+      let finalScores = new Map();
 
-async function createBackupFile(bookFolderId,blob,timestampName){
-  const meta={name:timestampName,parents:[bookFolderId]};
-  const form=new FormData();
-  form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
-  form.append('file',blob);
-  const r=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',body:form,headers:{}});
-  return await r.json();
-}
+      for (const t of terms) {
+        const fuse = new Fuse(currentList, opts);
+        const res = fuse.search(t);
+        if (res.length === 0) return [];
+        currentList = res.map(r => {
+          finalScores.set(r.item, (finalScores.get(r.item) || 0) + r.score);
+          return r.item;
+        });
+      }
 
-async function loadFromDriveCanonical(){
-  if(!accessToken)throw new Error('Driveに未接続です');
-  if(!driveState.bookFolderId)await ensureDriveFolders();
-  const f=await findCanonicalFile(driveState.bookFolderId);
-  if(!f){toast('正本ファイルが見つかりません。新規作成されます。','info');return}
-  driveState.canonicalFileId=f.fileId;
-  const ab=await downloadDriveFile(f.fileId);
-  knowledgeBase=parseWorkbook(ab);
-  persist();
-  lastLoadTime=new Date().toLocaleString('ja-JP');
-  toast('Driveから読み込み完了（'+knowledgeBase.length+'件）','success');
-}
+      return currentList.map(item => ({ item, score: finalScores.get(item) / terms.length })).sort((a, b) => a.score - b.score);
+    }
 
-async function saveToDriveWithBackup(reasonText){
-  if(!accessToken)throw new Error('Driveに未接続です');
-  if(!driveState.bookFolderId)await ensureDriveFolders();
-  const blob=buildWorkbookBlob();
-  let canonRes;
-  try{
-    canonRes=await uploadOrUpdateCanonical(driveState.bookFolderId,blob,driveState.canonicalFileId);
-    driveState.canonicalFileId=canonRes;
-  }catch(e){throw new Error('正本の保存に失敗: '+e.message)}
-  const now=new Date();
-  const ts='知恵の書 '+now.getFullYear()+'.'+(now.getMonth()+1)+'.'+now.getDate()+'.'+now.getHours()+'.'+now.getMinutes()+'.'+now.getSeconds()+'.xlsx';
-  try{await createBackupFile(driveState.bookFolderId,blob,ts)}catch(e){
-    toast('本体保存成功 / バックアップ失敗: '+e.message,'error');
-    renderAll();return;
-  }
-  persist();
-  toast((reasonText||'保存')+'完了（正本+バックアップ）','success');
-}
+    function searchKnowledge(query) {
+      if (!query || knowledgeBase.length === 0) return [];
+      const max = parseInt(document.getElementById('askMax')?.value) || 15;
+      return multiTermSearch(query, knowledgeBase, ['info', 'keywords', 'tags', 'source'], 0.5).slice(0, max);
+    }
 
-// ===== SEARCH & ANSWER =====
-function searchKnowledge(query){
-  if(!query||knowledgeBase.length===0)return[];
-  const fuse=new Fuse(knowledgeBase,{keys:['info','source'],threshold:0.4,includeScore:true,includeMatches:true});
-  return fuse.search(query).slice(0,10);
-}
-function generateAnswerRuleBased(query,results){
-  if(!results||results.length===0)return{answer:'知恵の書内に該当情報がありません。\n\n追加を検討すべき情報：\n・「'+query+'」に関連する事実や定義\n・関連する参考文献URL',evidence:[]};
-  let answer='【質問】'+query+'\n\n【回答】\n';
-  const evidence=[];
-  results.forEach((r,i)=>{
-    const idx=knowledgeBase.indexOf(r.item);
-    answer+=(i+1)+'. '+r.item.info+'\n';
-    evidence.push({row:idx+1,info:r.item.info,date:r.item.date,source:r.item.source,score:r.score});
-  });
-  return{answer,evidence};
-}
+    // ===== GEMINI =====
+    async function fileToBase64(file) {
+      return new Promise((res, rej) => { const rd = new FileReader(); rd.onload = () => res({ mimeType: file.type || 'application/octet-stream', base64: rd.result.split(',')[1] }); rd.onerror = rej; rd.readAsDataURL(file) });
+    }
+    async function callGeminiExtract(mimeType, b64) {
+      const key = getGeminiKey(); if (!key) throw new Error('Gemini API Keyが設定されていません');
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel() + ':generateContent?key=' + key;
+      const body = { contents: [{ parts: [{ inlineData: { mimeType, data: b64 } }, { text: 'あなたは知識整理の専門家です。このファイルの内容を分析し、以下のルールに従ってJSON形式のみで返してください。\n\n【箇条書きルール】\n- 1つの箇条書き＝1つの独立した事実・知識にする（1文で完結）\n- 【重要】元の文章で主語が省略されている場合でも、前後の文脈や主題から推察して「何についての内容か」が明確に分かるように、必ず主語（または主題）を補って文を作成してください。その文だけを単独で読んでも絶対に意味が通るようにすること。\n- 冗長な表現を避け、要点を簡潔かつ正確に書く\n- 専門用語・固有名詞はそのまま保持する\n- 数値・日付・条件などの具体的情報は省略しない\n- 図表がある場合は「【図】○○の関係を示す図」のように内容を説明する\n- 箇条書きの順番は文書の論理構造に従う\n- 重複する内容は統合して1つにまとめる\n\n【出力JSON形式（これ以外のテキストは禁止）】\n{"extracted_text":"元の文書から抽出した主要テキスト","bullets":["箇条書き1","箇条書き2"],"urls":["文書内に含まれるURL"]}' }] }], generationConfig: { responseMimeType: 'application/json' } };
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) { const t = await r.text(); if (r.status === 429) { const wm = t.match(/retry in ([\d.]+)s/i); const sec = wm ? Math.ceil(parseFloat(wm[1])) : 60; throw new Error('RATE_LIMIT:' + r.status + ':' + sec) } throw new Error('Gemini APIエラー: ' + r.status + ' ' + t) }
+      const d = await r.json(); const txt = d.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!txt) throw new Error('Geminiからの応答が空です');
+      try { return JSON.parse(txt) } catch (e) { const m = txt.match(/\{[\s\S]*\}/); if (m) try { return JSON.parse(m[0]) } catch (e2) { } throw new Error('Geminiの返答が不正なJSONです: ' + txt.substring(0, 200)) }
+    }
 
-// ===== GEMINI =====
-async function fileToBase64(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=()=>{const b64=reader.result.split(',')[1];resolve({mimeType:file.type||'application/octet-stream',base64:b64})};
-    reader.onerror=reject;
-    reader.readAsDataURL(file);
-  });
-}
-async function callGeminiExtract(mimeType,base64Data){
-  const key=getGeminiKey();
-  if(!key)throw new Error('Gemini API Keyが設定されていません');
-  const model=getGeminiModel();
-  const url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
-  const body={
-    contents:[{parts:[
-      {inlineData:{mimeType:mimeType,data:base64Data}},
-      {text:'このファイルの内容を分析し、重要ポイントを厳選して要約してください。箇条書きの数が多すぎないよう、内容の質は保ったまま、抽出する数を必要最小限にまとめてください。以下のJSON形式のみで返してください。JSON以外のテキストは一切含めないでください。\n{"extracted_text":"内容を要約した抽出テキスト全文","bullets":["厳選・要約された箇条書き1","厳選・要約された箇条書き2"],"urls":["抽出したURL1"]}'}
-    ]}],
-    generationConfig:{responseMimeType:'application/json'}
-  };
-  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!r.ok){const t=await r.text();throw new Error('Gemini API エラー: '+r.status+' '+t)}
-  const data=await r.json();
-  const text=data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if(!text)throw new Error('Geminiからの応答が空です');
-  try{return JSON.parse(text)}catch(e){
-    const m=text.match(/\{[\s\S]*\}/);
-    if(m)try{return JSON.parse(m[0])}catch(e2){}
-    throw new Error('Geminiの返答が不正なJSONです: '+text.substring(0,200));
-  }
-}
+    // ===== ROW OPS =====
+    function markUnsaved() {
+      hasUnsavedChanges = true;
+      const title = document.getElementById('bookTitle');
+      if (title && !title.innerHTML.includes('未保存')) {
+        title.innerHTML += ' <span style="color:#e74c3c;font-size:0.8rem;background:#fcebe9;padding:2px 6px;border-radius:4px">未保存</span>';
+      }
+    }
+    function addRow(info = '', date = '', source = '', keywords = '', tags = '') { if (!date) date = new Date().toLocaleDateString('ja-JP'); knowledgeBase.push({ info, keywords, tags, date, source }); persist(); markUnsaved(); renderAll(); }
+    function updateRow(i, f, v) { if (knowledgeBase[i] && knowledgeBase[i][f] !== v) { knowledgeBase[i][f] = v; persist(); markUnsaved(); } }
+    function deleteRow(i) { knowledgeBase.splice(i, 1); persist(); markUnsaved(); }
+    function appendKnowledgeFromBullets(bullets, date, tags = '') { if (!date) date = new Date().toLocaleDateString('ja-JP'); bullets.forEach(b => { const text = typeof b === 'object' ? b.text : b; const src = typeof b === 'object' ? (b.fileUrl || '') : ''; const kw = typeof b === 'object' ? (b.keywords || '') : ''; if (text && text.trim()) knowledgeBase.push({ info: text.trim(), keywords: kw, tags, date, source: src }) }); persist(); markUnsaved(); renderAll(); }
 
-// ===== KNOWLEDGE OPS =====
-function addRow(info='',date='',source=''){
-  if(!date)date=new Date().toLocaleDateString('ja-JP');
-  knowledgeBase.push({info,date,source});
-  persist();
-}
-function updateRow(index,field,value){
-  if(knowledgeBase[index])knowledgeBase[index][field]=value;
-  persist();
-}
-function deleteRow(index){
-  knowledgeBase.splice(index,1);
-  persist();
-}
-function appendKnowledgeFromBullets(bullets,date,urls){
-  const src=(urls||[]).join('\n');
-  if(!date)date=new Date().toLocaleDateString('ja-JP');
-  bullets.forEach(b=>{if(b.trim())knowledgeBase.push({info:b.trim(),date:date,source:src})});
-  persist();
-}
+    // ===== SIMILARITY =====
+    function jaccard(a, b) { const sa = new Set(a.toLowerCase().split(/\s+/)); const sb = new Set(b.toLowerCase().split(/\s+/)); const it = new Set([...sa].filter(x => sb.has(x))); const un = new Set([...sa, ...sb]); return un.size ? it.size / un.size : 0 }
+    function findSimilar(text) { const res = []; knowledgeBase.forEach((r, i) => { const s = jaccard(text, r.info); if (s > 0.2) res.push({ index: i, item: r, similarity: s }) }); res.sort((a, b) => b.similarity - a.similarity); return res.slice(0, 5) }
 
-// ===== SIMILARITY =====
-function jaccard(a,b){
-  const sa=new Set(a.toLowerCase().split(/\s+/));
-  const sb=new Set(b.toLowerCase().split(/\s+/));
-  const inter=new Set([...sa].filter(x=>sb.has(x)));
-  const union=new Set([...sa,...sb]);
-  return union.size?inter.size/union.size:0;
-}
-function findSimilar(text){
-  const results=[];
-  knowledgeBase.forEach((r,i)=>{
-    const sim=jaccard(text,r.info);
-    if(sim>0.2)results.push({index:i,item:r,similarity:sim});
-  });
-  results.sort((a,b)=>b.similarity-a.similarity);
-  return results.slice(0,5);
-}
+    // ===== AUTH =====
+    function connectDrive() {
+      const cid = getClientId(); if (!cid) { toast('設定でGoogle Client IDを入力してください', 'e'); return }
+      driveState.status = 'connecting'; renderAll();
+      google.accounts.oauth2.initTokenClient({
+        client_id: cid, scope: 'https://www.googleapis.com/auth/drive.file', callback: (resp) => {
+          if (resp.error) { driveState.status = 'error'; toast('認証エラー: ' + resp.error, 'e'); renderAll(); return }
+          accessToken = resp.access_token; driveState.status = 'connected';
+          document.getElementById('hd').classList.add('on'); document.getElementById('hs').textContent = '接続済み';
+          toast('Google Driveに接続しました', 's'); renderAll();
+        }
+      }).requestAccessToken();
+    }
 
-// ===== GOOGLE AUTH =====
-function connectDrive(){
-  const clientId=getClientId();
-  if(!clientId){toast('設定でGoogle Client IDを入力してください','error');return}
-  driveState.status='connecting';
-  renderAll();
-  const tClient=google.accounts.oauth2.initTokenClient({
-    client_id:clientId,
-    scope:'https://www.googleapis.com/auth/drive.file',
-    callback:(resp)=>{
-      if(resp.error){driveState.status='error';toast('認証エラー: '+resp.error,'error');renderAll();return}
-      accessToken=resp.access_token;
-      driveState.status='connected';
-      document.getElementById('headerDot').classList.add('connected');
-      document.getElementById('headerStatus').textContent='接続済み';
-      toast('Google Driveに接続しました','success');
+    // ===== UTIL =====
+    function E(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+    function EA(s) { return String(s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
+    function urls(src) { if (!src) return '<span style="color:var(--text2)">—</span>'; return src.split('\n').filter(u => u.trim()).map(u => u.match(/^https?:\/\//) ? '<a href="' + u.trim() + '" target="_blank" class="ul">' + u.trim() + '</a>' : E(u)).join('<br>') }
+
+    // ===== RENDER =====
+    function renderAll() {
+      const scrollY = window.scrollY;
+      renderTabs();
+      renderPanel();
+      window.scrollTo(0, scrollY);
+    }
+    function renderTabs() { document.getElementById('tabBar').innerHTML = TABS.map((n, i) => '<button class="tb' + (i === activeTab ? ' active' : '') + '" onclick="activeTab=' + i + ';renderAll()">' + n + '</button>').join('') }
+    function renderTable() { renderAll() }
+    function renderPanel() { document.getElementById('mc').innerHTML = '<div class="pnl active">' + [renderHome, renderBook, renderAsk, renderImport, renderSettings][activeTab]() + '</div>' }
+
+    function renderHome() {
+      const c = driveState.status === 'connected';
+      return '<div class="card"><h2>📖 知恵の書へようこそ</h2><p style="color:var(--text2);margin-bottom:16px">知恵の書は、あなたの知識をExcelファイルとしてGoogle Driveに保存・管理するアプリです。ファイルやURLから知識を取り込み、いつでも質問で検索できます。</p>'
+        + '<div class="sg"><div class="sc"><div class="v">' + knowledgeBase.length + '</div><div class="l">登録データ数</div></div>'
+        + '<div class="sc"><div class="v" style="font-size:.9rem">' + (lastLoadTime || '—') + '</div><div class="l">最終読込</div></div>'
+        + '<div class="sc"><div class="v"><span class="bg ' + (c ? 'bgs' : 'bgd') + '">' + (c ? '接続済み' : '未接続') + '</span></div><div class="l">Drive状態</div></div></div></div>'
+        + '<div class="card"><h3>初期セットアップ</h3>'
+        + '<button class="btn bp" onclick="doInit()" ' + (c ? '' : 'disabled') + '>Driveに接続して初期化（フォルダ作成＋正本確認）</button>'
+        + (!c ? ' <span style="font-size:.8rem;color:var(--text2)">※先に設定タブでDriveに接続してください</span>' : '')
+        + '<div id="initR" style="margin-top:12px"></div></div>'
+        + '<div class="card"><h3>トラブルシューティング</h3>'
+        + '<button class="btn bo" onclick="debugDriveFiles()" ' + (c ? '' : 'disabled') + '>Drive上の「知恵の書」ファイル一覧を確認する</button>'
+        + '<div id="debugR" style="margin-top:12px"></div></div>';
+    }
+
+    async function debugDriveFiles() {
+      const el = document.getElementById('debugR'); if (!el) return; el.innerHTML = '<span class="ld"></span> フォルダ内のファイルを確認中...';
+      try {
+        if (!driveState.bookFolderId) await ensureDriveFolders();
+        if (!driveState.bookFolderId) throw new Error('どうしてもフォルダが見つかりません。');
+        const q = "name contains '知恵の書' and '" + driveState.bookFolderId + "' in parents and trashed=false";
+        const r = await driveApiFetch('https://www.googleapis.com/drive/v3/files?q=' + encodeURIComponent(q) + '&fields=files(id,name,modifiedTime,mimeType)&orderBy=modifiedTime desc&pageSize=10&spaces=drive');
+        const d = await r.json();
+        if (!d.files || d.files.length === 0) { el.innerHTML = 'ファイルが見つかりません。'; return; }
+        let h = '<div class="tw"><table><thead><tr><th>ファイル名</th><th>更新日時</th><th>MIMEタイプ</th></tr></thead><tbody>';
+        for (const f of d.files) {
+          h += '<tr><td>' + E(f.name) + '</td><td>' + E(new Date(f.modifiedTime).toLocaleString('ja-JP')) + '</td><td style="font-size:.7rem">' + E(f.mimeType) + '</td></tr>';
+        }
+        h += '</tbody></table></div><div class="al ai" style="margin-top:8px">※上から新しい順（modifiedTime降順）です。一番上のファイルが「最新」として読み込まれます。</div>';
+        el.innerHTML = h;
+      } catch (e) {
+        el.innerHTML = '<div class="al ad">エラー: ' + E(e.message) + '</div>';
+      }
+    }
+
+    function renderBook() {
+      const c = driveState.status === 'connected';
+      let h = '<div class="card" style="padding-top:0"><div style="position:sticky;top:0;background:var(--card);z-index:900;padding-top:20px;padding-bottom:12px;margin:-20px -20px 16px -20px;padding-left:20px;padding-right:20px;border-bottom:1px solid var(--border)">';
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px"><h2 id="bookTitle" style="display:flex;align-items:center;gap:8px;margin:0">📚 知恵の書 ' + (hasUnsavedChanges ? '<span style="color:#e74c3c;font-size:0.8rem;background:#fcebe9;padding:2px 6px;border-radius:4px">未保存</span>' : '') + '</h2><div style="display:flex;gap:8px">'
+        + '<button class="btn sm bs" onclick="doAddRow()">＋ 行追加</button>'
+        + '<button class="btn sm bo" onclick="doLoadDrive()" ' + (c ? '' : 'disabled') + '>🔄 読込</button>'
+        + '<button class="btn sm bp" onclick="doSaveDrive(false)" ' + (c ? '' : 'disabled') + '>上書き保存</button>'
+        + '<button class="btn sm bo" onclick="doSaveDrive(true)" ' + (c ? '' : 'disabled') + '>新たに保存</button></div></div>'
+        + '<div class="ig" style="margin-bottom:0"><input type="text" id="bkS" placeholder="検索..." oninput="renderAll()"></div></div>';
+      const q = document.getElementById('bkS')?.value || '';
+      let fl = knowledgeBase.map((r, i) => ({ ...r, _i: i }));
+      if (q) fl = multiTermSearch(q, fl, ['info', 'source', 'keywords', 'tags'], 0.4).map(r => r.item);
+
+      if (isMobile()) {
+        h += '<div class="tw-m">';
+        if (!fl.length) h += '<div style="text-align:center;padding:20px;color:var(--text2)">データがありません</div>';
+        else fl.forEach(r => {
+          h += '<div class="m-card" onclick="openEditModal(' + r._i + ')">';
+          h += '<div class="m-idx">#' + (r._i + 1) + '</div>';
+          h += '<span class="m-lbl">情報</span><div class="m-val' + (r.info ? '' : ' empty') + '">' + E(r.info || '(空)') + '</div>';
+          h += '<span class="m-lbl">重要語句</span><div class="m-val' + (r.keywords ? '' : ' empty') + '">' + E(r.keywords || '(空)') + '</div>';
+          h += '<span class="m-lbl">タグ</span><div class="m-val' + (r.tags ? '' : ' empty') + '">' + E(r.tags || '(空)') + '</div>';
+          h += '<span class="m-lbl">参考文献</span><div class="m-val' + (r.source ? '' : ' empty') + '">' + urls(r.source) + '</div>';
+          h += '<div class="m-act" onclick="event.stopPropagation()">';
+          h += '<div style="font-size:0.75rem;color:var(--text2);flex:1">' + E(r.date) + '</div>';
+          h += '<button class="btn sm bd" onclick="doDelete(' + r._i + ', this)">削除</button>';
+          h += '</div></div>';
+        });
+        h += '</div></div>';
+      } else {
+        h += '<div class="tw"><table><thead><tr><th style="width:40px">#</th><th>情報</th><th style="width:120px">重要語句</th><th style="width:100px">タグ</th><th style="width:100px">記載日</th><th style="width:180px">参考文献</th><th style="width:80px">操作</th></tr></thead><tbody>';
+        if (!fl.length) h += '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">データがありません</td></tr>';
+        else fl.forEach(r => { h += '<tr><td>' + (r._i + 1) + '</td><td id="kbInfo_' + r._i + '" contenteditable="true" onblur="updateRow(' + r._i + ',\'info\',this.textContent)" onmouseup="handleInfoSelection(' + r._i + ', event)">' + E(r.info) + '</td><td id="kbKw_' + r._i + '" contenteditable="true" onblur="updateRow(' + r._i + ',\'keywords\',this.textContent)">' + E(r.keywords || '') + '</td><td contenteditable="true" onblur="updateRow(' + r._i + ',\'tags\',this.textContent)">' + E(r.tags || '') + '</td><td contenteditable="true" onblur="updateRow(' + r._i + ',\'date\',this.textContent)">' + E(r.date) + '</td><td>' + urls(r.source) + '<br><input type="text" style="font-size:.75rem;margin-top:4px" value="' + EA(r.source) + '" onchange="updateRow(' + r._i + ',\'source\',this.value)" placeholder="URL"></td><td><button class="btn sm bd" onclick="doDelete(' + r._i + ', this)">削除</button></td></tr>' });
+        h += '</tbody></table></div></div>';
+      }
+      h += '<div id="kwPopup" style="display:none;position:absolute;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.2);padding:6px"><button class="btn sm bp" onclick="registerSelectedKeyword()" style="white-space:nowrap;font-size:0.85rem">🔑 重要語句に登録</button></div>';
+      return h;
+    }
+
+    let _selectedKwInfo = { idx: -1, text: '' };
+    function handleInfoSelection(idx, e) {
+      const sel = window.getSelection();
+      const text = sel.toString().trim();
+      const popup = document.getElementById('kwPopup');
+      if (text.length > 0 && text.length < 50) {
+        _selectedKwInfo = { idx, text };
+        const rect = sel.getRangeAt(0).getBoundingClientRect();
+        popup.style.display = 'block';
+        popup.style.top = (window.scrollY + rect.top - 45) + 'px';
+        popup.style.left = (window.scrollX + rect.left + rect.width / 2 - popup.offsetWidth / 2) + 'px';
+      } else {
+        popup.style.display = 'none';
+      }
+    }
+    function registerSelectedKeyword() {
+      const { idx, text } = _selectedKwInfo;
+      if (idx === -1 || !text) return;
+      const oldKw = knowledgeBase[idx].keywords || '';
+      const newKwList = Array.from(new Set([...oldKw.split(','), text].map(k => k.trim()).filter(Boolean)));
+      updateRow(idx, 'keywords', newKwList.join(', '));
+      document.getElementById('kwPopup').style.display = 'none';
+      window.getSelection().removeAllRanges();
+      toast('「' + text + '」を重要語句に登録しました', 's');
       renderAll();
     }
-  });
-  tClient.requestAccessToken();
-}
-
-// ===== RENDER =====
-function renderAll(){renderTabs();renderPanel()}
-function renderTabs(){
-  const bar=document.getElementById('tabBar');
-  bar.innerHTML=TAB_NAMES.map((n,i)=>'<button class="tab-btn'+(i===activeTab?' active':'')+'" onclick="activeTab='+i+';renderAll()">'+n+'</button>').join('');
-}
-function switchTab(i){activeTab=i;renderAll()}
-
-function renderPanel(){
-  const mc=document.getElementById('mainContent');
-  const panels=[renderHome,renderBook,renderAsk,renderImport,renderSettings];
-  mc.innerHTML='<div class="panel active">'+panels[activeTab]()+'</div>';
-  bindEvents();
-}
-
-function makeUrlsClickable(src){
-  if(!src)return'<span style="color:var(--text2)">—</span>';
-  return src.split('\n').filter(u=>u.trim()).map(u=>{
-    if(u.match(/^https?:\/\//))return'<a href="'+u.trim()+'" target="_blank" class="url-link">'+u.trim()+'</a>';
-    return u;
-  }).join('<br>');
-}
-
-function renderHome(){
-  const isConn=driveState.status==='connected';
-  return '<div class="card"><h2>📖 知恵の書へようこそ</h2><p style="color:var(--text2);margin-bottom:16px">知恵の書は、あなたの知識をExcelファイルとしてGoogle Driveに保存・管理するアプリです。ファイルやURLから知識を取り込み、いつでも質問で検索できます。</p>'
-    +'<div class="stat-grid"><div class="stat-card"><div class="val">'+knowledgeBase.length+'</div><div class="lbl">登録データ数</div></div>'
-    +'<div class="stat-card"><div class="val">'+(lastLoadTime||'—')+'</div><div class="lbl">最終読込</div></div>'
-    +'<div class="stat-card"><div class="val"><span class="badge '+(isConn?'badge-success':'badge-danger')+'">'+(isConn?'接続済み':'未接続')+'</span></div><div class="lbl">Drive状態</div></div></div></div>'
-    +'<div class="card"><h3>初期セットアップ</h3>'
-    +'<button class="btn btn-primary" onclick="doInit()" '+(isConn?'':'disabled')+'>Driveに接続して初期化（フォルダ作成＋正本確認）</button>'
-    +(!isConn?' <span style="font-size:.8rem;color:var(--text2)">※先に設定タブでDriveに接続してください</span>':'')
-    +'<div id="initResult" style="margin-top:12px"></div></div>';
-}
-
-function renderBook(){
-  const isConn=driveState.status==='connected';
-  let html='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px"><h2>📚 知恵の書</h2><div style="display:flex;gap:8px">'
-    +'<button class="btn btn-sm btn-success" onclick="doAddRow()">＋ 行追加</button>'
-    +'<button class="btn btn-sm btn-primary" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Driveへ保存</button></div></div>'
-    +'<div class="input-group"><input type="text" id="bookSearch" placeholder="検索..." oninput="renderAll()"></div>';
-  const q=document.getElementById('bookSearch')?.value||'';
-  let filtered=knowledgeBase.map((r,i)=>({...r,_i:i}));
-  if(q){const fuse=new Fuse(filtered,{keys:['info','source'],threshold:0.4});filtered=fuse.search(q).map(r=>r.item)}
-  html+='<div class="table-wrap"><table><thead><tr><th style="width:40px">#</th><th>情報</th><th style="width:100px">記載日</th><th style="width:180px">参考文献</th><th style="width:80px">操作</th></tr></thead><tbody>';
-  if(filtered.length===0)html+='<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">データがありません</td></tr>';
-  else filtered.forEach(r=>{
-    html+='<tr><td>'+(r._i+1)+'</td>'
-      +'<td contenteditable="true" onblur="updateRow('+r._i+',\'info\',this.textContent)">'+escHtml(r.info)+'</td>'
-      +'<td contenteditable="true" onblur="updateRow('+r._i+',\'date\',this.textContent)">'+escHtml(r.date)+'</td>'
-      +'<td>'+makeUrlsClickable(r.source)+'<br><input type="text" style="font-size:.75rem;margin-top:4px" value="'+escAttr(r.source)+'" onchange="updateRow('+r._i+',\'source\',this.value)" placeholder="URL（改行=複数）"></td>'
-      +'<td><button class="btn btn-sm btn-danger" onclick="if(confirm(\'削除しますか？\')){deleteRow('+r._i+');renderAll()}">削除</button></td></tr>';
-  });
-  html+='</tbody></table></div></div>';
-  return html;
-}
-
-function renderAsk(){
-  const isConn=driveState.status==='connected';
-  return '<div class="card"><h2>❓ 質問</h2>'
-    +'<div class="input-group"><label>質問内容</label><input type="text" id="askInput" placeholder="知恵の書に質問する..."></div>'
-    +'<label class="toggle" style="margin-bottom:12px"><input type="checkbox" id="refreshToggle" '+(getRefreshBeforeAsk()?'checked':'')+' onchange="setSetting(\'refresh_before_ask\',this.checked?\'on\':\'off\')"><span class="slider"></span>質問前にDriveから最新を取得</label>'
-    +'<button class="btn btn-primary" onclick="doAsk()" id="askBtn">検索して回答</button>'
-    +'<div id="askResult" style="margin-top:16px"></div></div>';
-}
-
-function renderImport(){
-  const isConn=driveState.status==='connected';
-  const hasKey=!!getGeminiKey();
-  const online=navigator.onLine;
-  const canGemini=hasKey&&online;
-  let disableReason='';
-  if(!hasKey)disableReason='Gemini API Keyが未設定です。設定タブで入力してください。';
-  else if(!online)disableReason='オフラインのためGemini機能は使用できません。';
-  return '<div class="card"><h2>📥 ファイル取り込み</h2>'
-    +'<div class="input-group"><label>ファイルを選択（PDF/DOCX/PPTX/TXT/MD/PNG/JPG）</label><input type="file" id="importFile" accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg" style="padding:8px"></div>'
-    +(disableReason?'<div class="alert alert-warn">'+disableReason+'</div>':'')
-    +'<button class="btn btn-primary" onclick="doGeminiExtract()" '+(canGemini?'':'disabled')+'>Geminiで読み取り（抽出＋箇条書き）</button>'
-    +'<div id="importResult" style="margin-top:16px"></div></div>';
-}
-
-function renderSettings(){
-  const st=driveState.status;
-  const stLabel={disconnected:'未接続',connecting:'接続中...',connected:'接続済み',error:'エラー'}[st]||st;
-  const stClass={disconnected:'badge-danger',connecting:'badge-warn',connected:'badge-success',error:'badge-danger'}[st]||'badge-danger';
-  const isConn=st==='connected';
-  const savedKey=getSetting('gemini_key_saved')==='true';
-  return '<div class="card"><h2>⚙️ Google Drive設定</h2>'
-    +'<div class="input-group"><label>Google Client ID</label><input type="text" id="clientIdInput" value="'+escAttr(getClientId())+'" placeholder="xxxx.apps.googleusercontent.com" onchange="setSetting(\'client_id\',this.value)"></div>'
-    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><button class="btn btn-primary" onclick="connectDrive()">Driveに接続</button><span class="badge '+stClass+'">'+stLabel+'</span></div>'
-    +(isConn?'<div class="alert alert-info">フォルダID: app='+escHtml(driveState.appFolderId||'—')+' / book='+escHtml(driveState.bookFolderId||'—')+' / ref='+escHtml(driveState.refFolderId||'—')+'</div>':'')
-    +'<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-outline" onclick="doLoadDrive()" '+(isConn?'':'disabled')+'>Driveから読み込み</button><button class="btn btn-outline" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Driveへ保存</button></div>'
-    +'<div class="alert '+(navigator.onLine?'alert-success':'alert-warn')+'">オンライン状態: '+(navigator.onLine?'オンライン':'オフライン')+'</div></div>'
-    +'<div class="card"><h2>🤖 Gemini API設定</h2>'
-    +'<div class="input-group"><label>Gemini API Key</label><input type="password" id="geminiKeyInput" value="'+escAttr(getGeminiKey())+'" placeholder="AIza..." onchange="setSetting(\'gemini_key\',this.value)"></div>'
-    +'<label class="toggle" style="margin-bottom:8px"><input type="checkbox" id="saveKeyCheck" '+(savedKey?'checked':'')+' onchange="onSaveKeyToggle(this.checked)"><span class="slider"></span>この端末に保存（自己責任）</label>'
-    +'<div class="alert alert-danger" style="font-size:.78rem">⚠️ APIキーをブラウザに保存すると、この端末にアクセスできる人は誰でもキーを閲覧できます。共有端末では保存しないでください。暗号化は行われません。</div>'
-    +'<div class="input-group"><label>Geminiモデル名</label><input type="text" id="geminiModelInput" value="'+escAttr(getGeminiModel())+'" placeholder="gemini-2.0-flash" onchange="setSetting(\'gemini_model\',this.value)"></div>'
-    +'<button class="btn btn-outline" onclick="doGeminiTest()">Gemini接続テスト</button>'
-    +'<div id="geminiTestResult" style="margin-top:8px"></div></div>';
-}
-
-// ===== RENDER TABLE (exported) =====
-function renderTable(){renderAll()}
-
-// ===== UTILITIES =====
-function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
-
-// ===== EVENT HANDLERS =====
-function bindEvents(){}
-
-async function doInit(){
-  const el=document.getElementById('initResult');
-  if(!el)return;
-  el.innerHTML='<div class="loading"></div> 初期化中...';
-  try{
-    await ensureDriveFolders();
-    const f=await findCanonicalFile(driveState.bookFolderId);
-    if(f){driveState.canonicalFileId=f.fileId;const ab=await downloadDriveFile(f.fileId);knowledgeBase=parseWorkbook(ab);persist();lastLoadTime=new Date().toLocaleString('ja-JP');
-      el.innerHTML='<div class="alert alert-success">初期化完了。正本を読み込みました（'+knowledgeBase.length+'件）</div>';}
-    else{el.innerHTML='<div class="alert alert-info">フォルダを作成しました。正本ファイルはまだありません。知恵の書タブでデータを追加して保存してください。</div>';}
-    toast('初期化完了','success');
-    renderAll();
-  }catch(e){el.innerHTML='<div class="alert alert-danger">初期化失敗: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doInit()" style="margin-top:8px">再試行</button></div>'}
-}
-
-function doAddRow(){
-  addRow('','','');
-  renderAll();
-}
-
-async function doSaveDrive(){
-  try{await saveToDriveWithBackup('知恵の書保存');renderAll()}catch(e){toast('保存失敗: '+e.message,'error')}
-}
-
-async function doLoadDrive(){
-  try{await loadFromDriveCanonical();renderAll()}catch(e){toast('読み込み失敗: '+e.message,'error')}
-}
-
-async function doAsk(){
-  const input=document.getElementById('askInput');
-  const el=document.getElementById('askResult');
-  if(!input||!el)return;
-  const q=input.value.trim();
-  if(!q){toast('質問を入力してください','error');return}
-  el.innerHTML='<div class="loading"></div> 検索中...';
-  try{
-    if(getRefreshBeforeAsk()&&accessToken){
-      try{await loadFromDriveCanonical()}catch(e){el.innerHTML+='<br><span class="alert alert-warn" style="display:inline-block;margin-top:4px">Drive最新取得に失敗（ローカルキャッシュで回答します）: '+escHtml(e.message)+'</span>'}
-    }
-    const results=searchKnowledge(q);
-    const{answer,evidence}=generateAnswerRuleBased(q,results);
-    let html='<div class="card" style="margin-top:0"><h3>回答</h3><pre style="white-space:pre-wrap;font-family:inherit;color:var(--text)">'+escHtml(answer)+'</pre>';
-    if(evidence.length>0){
-      html+='<h3 style="margin-top:12px">根拠</h3><div class="table-wrap"><table><thead><tr><th>行#</th><th>情報</th><th>記載日</th><th>参考文献</th></tr></thead><tbody>';
-      evidence.forEach(e=>{
-        html+='<tr><td>'+e.row+'</td><td>'+escHtml(e.info)+'</td><td>'+escHtml(e.date)+'</td><td>'+makeUrlsClickable(e.source)+'</td></tr>';
-      });
-      html+='</tbody></table></div>';
-    }
-    html+='</div>';
-    el.innerHTML=html;
-  }catch(e){el.innerHTML='<div class="alert alert-danger">エラー: '+escHtml(e.message)+'</div>'}
-}
-
-// ===== IMPORT =====
-let importState={extracted_text:'',bullets:[],urls:[]};
-
-async function doGeminiExtract(){
-  const fileInput=document.getElementById('importFile');
-  const el=document.getElementById('importResult');
-  if(!fileInput||!el)return;
-  if(!fileInput.files||fileInput.files.length===0){toast('ファイルを選択してください','error');return}
-  const file=fileInput.files[0];
-  el.innerHTML='<div class="loading"></div> Geminiで解析中... (ファイルサイズ: '+(file.size/1024).toFixed(1)+'KB)';
-  try{
-    const{mimeType,base64}=await fileToBase64(file);
-    const result=await callGeminiExtract(mimeType,base64);
-    importState=result;
-    if(!importState.bullets)importState.bullets=[];
-    if(!importState.urls)importState.urls=[];
-    if(!importState.extracted_text)importState.extracted_text='';
-    renderImportResult(el);
-  }catch(e){
-    el.innerHTML='<div class="alert alert-danger">Gemini読み取りエラー: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doGeminiExtract()" style="margin-top:8px">再試行</button></div>';
-  }
-}
-
-function renderImportResult(el){
-  let html='<div class="card" style="margin-top:0"><h3>抽出テキスト</h3><textarea id="extractedText" rows="5" style="margin-bottom:12px">'+escHtml(importState.extracted_text)+'</textarea>';
-  html+='<h3>箇条書き（編集可能）</h3><div id="bulletsList">';
-  importState.bullets.forEach((b,i)=>{
-    html+='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="'+escAttr(b)+'" onchange="importState.bullets['+i+']=this.value" style="flex:1"><button class="btn btn-sm btn-danger" onclick="importState.bullets.splice('+i+',1);renderImportResult(document.getElementById(\'importResult\'))">✕</button></div>';
-  });
-  html+='<button class="btn btn-sm btn-outline" onclick="importState.bullets.push(\'\');renderImportResult(document.getElementById(\'importResult\'))">＋ 箇条書き追加</button></div>';
-  html+='<h3 style="margin-top:12px">URL（編集可能）</h3><div id="urlsList">';
-  importState.urls.forEach((u,i)=>{
-    html+='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="'+escAttr(u)+'" onchange="importState.urls['+i+']=this.value" style="flex:1"><button class="btn btn-sm btn-danger" onclick="importState.urls.splice('+i+',1);renderImportResult(document.getElementById(\'importResult\'))">✕</button></div>';
-  });
-  html+='<button class="btn btn-sm btn-outline" onclick="importState.urls.push(\'\');renderImportResult(document.getElementById(\'importResult\'))">＋ URL追加</button>';
-  html+='<div style="margin-top:16px"><button class="btn btn-success" onclick="doAppendBullets()">知恵の書に追記</button></div></div></div>';
-  el.innerHTML=html;
-}
-
-async function doAppendBullets(){
-  const bullets=importState.bullets.filter(b=>b.trim());
-  if(bullets.length===0){toast('追記する箇条書きがありません','error');return}
-  // Check similarity
-  const conflicts=[];
-  bullets.forEach((b,i)=>{
-    const sims=findSimilar(b);
-    if(sims.length>0)conflicts.push({bulletIdx:i,bullet:b,similar:sims});
-  });
-  if(conflicts.length>0){
-    await showSimilarityUI(conflicts);
-    return;
-  }
-  appendKnowledgeFromBullets(bullets,new Date().toLocaleDateString('ja-JP'),importState.urls);
-  toast(bullets.length+'件を追記しました','success');
-  if(accessToken){try{await saveToDriveWithBackup('取り込み追記')}catch(e){toast('Drive保存失敗: '+e.message,'error')}}
-  importState={extracted_text:'',bullets:[],urls:[]};
-  renderAll();
-}
-
-async function showSimilarityUI(conflicts){
-  const el=document.getElementById('importResult');
-  if(!el)return;
-  let html='<div class="card" style="margin-top:12px"><h3>類似チェック結果</h3>';
-  conflicts.forEach((c,ci)=>{
-    const sim=c.similar[0];
-    const level=sim.similarity>0.6?'高':sim.similarity>0.35?'中':'低';
-    html+='<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">';
-    html+='<div class="badge '+(level==='高'?'badge-danger':level==='中'?'badge-warn':'badge-success')+'">類似度: '+level+' ('+Math.round(sim.similarity*100)+'%)</div>';
-    if(level==='高'){
-      const merged=c.bullet.length>sim.item.info.length?c.bullet:sim.item.info;
-      const mergedSrc=[sim.item.source,...importState.urls].filter(Boolean).join('\n');
-      html+='<p style="color:var(--text2);font-size:.85rem;margin:8px 0">統合案（重複を1行に統合し参考文献をマージ）:</p>';
-      html+='<textarea id="merge_'+ci+'" rows="2" style="margin-bottom:8px">'+escHtml(merged)+'</textarea>';
-      html+='<button class="btn btn-sm btn-primary" onclick="doMergeSim('+ci+','+sim.index+')">統合して更新</button> ';
-      html+='<button class="btn btn-sm btn-outline" onclick="doSkipSim('+ci+')">スキップ（新規追加）</button>';
-    }else if(level==='中'){
-      html+='<div class="compare-ui"><div class="compare-side"><h4>既存（行'+(sim.index+1)+'）</h4><p>'+escHtml(sim.item.info)+'</p></div>';
-      html+='<div class="compare-side"><h4>新規</h4><p>'+escHtml(c.bullet)+'</p></div></div>';
-      html+='<textarea id="merge_'+ci+'" rows="2" placeholder="最終テキストを入力..." style="margin-bottom:8px">'+escHtml(c.bullet)+'</textarea>';
-      html+='<button class="btn btn-sm btn-primary" onclick="doMergeSim('+ci+','+sim.index+')">この内容で既存を更新</button> ';
-      html+='<button class="btn btn-sm btn-outline" onclick="doSkipSim('+ci+')">新規追加</button>';
-    }else{
-      html+='<p style="font-size:.85rem;margin:4px 0">新規追加: '+escHtml(c.bullet)+'</p>';
-      html+='<button class="btn btn-sm btn-success" onclick="doSkipSim('+ci+')">新規追加</button>';
-    }
-    html+='</div>';
-  });
-  html+='<button class="btn btn-success" onclick="doFinishImport()" style="margin-top:8px">残りを全て新規追加して完了</button></div>';
-  el.innerHTML+=html;
-  window._importConflicts=conflicts;
-}
-
-async function doMergeSim(conflictIdx,existingIdx){
-  const ta=document.getElementById('merge_'+conflictIdx);
-  if(ta){
-    updateRow(existingIdx,'info',ta.value);
-    const merged=[knowledgeBase[existingIdx].source,...importState.urls].filter(Boolean).join('\n');
-    updateRow(existingIdx,'source',merged);
-  }
-  if(window._importConflicts)window._importConflicts[conflictIdx]._done=true;
-  toast('統合しました','success');
-}
-
-async function doSkipSim(conflictIdx){
-  if(window._importConflicts){
-    const c=window._importConflicts[conflictIdx];
-    addRow(c.bullet,new Date().toLocaleDateString('ja-JP'),importState.urls.join('\n'));
-    c._done=true;
-  }
-  toast('新規追加しました','success');
-}
-
-async function doFinishImport(){
-  const remaining=importState.bullets.filter((b,i)=>{
-    if(!window._importConflicts)return true;
-    return!window._importConflicts.find(c=>c.bulletIdx===i&&c._done);
-  }).filter(b=>b.trim());
-  if(remaining.length>0)appendKnowledgeFromBullets(remaining,new Date().toLocaleDateString('ja-JP'),importState.urls);
-  if(accessToken){try{await saveToDriveWithBackup('取り込み完了')}catch(e){toast('Drive保存失敗: '+e.message,'error')}}
-  importState={extracted_text:'',bullets:[],urls:[]};
-  window._importConflicts=null;
-  toast('取り込み完了','success');
-  renderAll();
-}
-
-function onSaveKeyToggle(checked){
-  setSetting('gemini_key_saved',checked?'true':'false');
-  if(!checked){try{localStorage.removeItem('chie_gemini_key')}catch(e){}}
-}
-
-async function doGeminiTest(){
-  const el=document.getElementById('geminiTestResult');
-  if(!el)return;
-  const key=getGeminiKey();
-  if(!key){el.innerHTML='<div class="alert alert-danger">API Keyが未設定です</div>';return}
-  el.innerHTML='<div class="loading"></div> テスト中...';
-  try{
-    const model=getGeminiModel();
-    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:'テスト。「OK」とだけ返してください。'}]}]})
+    document.addEventListener('mousedown', (e) => {
+      const popup = document.getElementById('kwPopup');
+      if (popup && popup.style.display === 'block' && !popup.contains(e.target)) {
+        setTimeout(() => { if (window.getSelection().toString().trim() === '') popup.style.display = 'none'; }, 100);
+      }
     });
-    if(!r.ok){const t=await r.text();throw new Error(r.status+' '+t)}
-    const d=await r.json();
-    const txt=d.candidates?.[0]?.content?.parts?.[0]?.text||'応答なし';
-    el.innerHTML='<div class="alert alert-success">接続成功: '+escHtml(txt)+'</div>';
-  }catch(e){el.innerHTML='<div class="alert alert-danger">接続失敗: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doGeminiTest()" style="margin-top:8px">再試行</button></div>'}
-}
 
-// ===== INIT =====
-function initApp(){
-  restore();
-  renderAll();
-  window.addEventListener('online',()=>{toast('オンラインに復帰','success');renderAll()});
-  window.addEventListener('offline',()=>{toast('オフラインです','error');renderAll()});
-}
-document.addEventListener('DOMContentLoaded',initApp);
-</script>
+    function renderAsk() {
+      return '<div class="card"><h2>❓ 質問</h2>'
+        + '<div class="ig"><label>質問内容</label><input type="text" id="askI" placeholder="知恵の書に質問する..."></div>'
+        + '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">'
+        + '<label class="tg"><input type="checkbox" id="rfT" ' + (getRefreshBeforeAsk() ? 'checked' : '') + ' onchange="setSetting(\'refresh_before_ask\',this.checked?\'on\':\'off\')"><span class="sl"></span>質問前にDriveから最新を取得</label>'
+        + '<div style="display:flex;align-items:center;gap:4px;font-size:.85rem"><label>表示件数:</label><input type="number" id="askMax" value="15" min="1" max="100" style="width:60px;padding:6px 8px;text-align:center"></div>'
+        + '</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        + '<button class="btn bp" onclick="doAsk()">検索して回答</button>'
+        + '<button class="btn bs" onclick="doAdvancedSearch()">✨ アドバンス検索</button>'
+        + '</div>'
+        + '<div id="askR" style="margin-top:16px"></div></div>';
+    }
+
+    function renderImport() {
+      const hk = !!getGeminiKey(), ol = navigator.onLine, ok = hk && ol;
+      const dc = driveState.status === 'connected';
+      let dr = ''; if (!hk) dr = 'Gemini API Keyが未設定です。設定タブで入力してください。'; else if (!ol) dr = 'オフラインのためGemini機能は使用できません。';
+      const dndText = isMobile() ? '📂 タップしてファイルを選択' : '📂 ここにファイルをドラッグ＆ドロップ<br><span style="font-size:.8rem">または クリックして選択（複数可）</span>';
+      return '<div class="card"><h2>📥 ファイル取り込み</h2>'
+        + '<div class="dz" id="dropZone" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="handleDrop(event)" onclick="document.getElementById(\'impF\').click()">' + dndText + '</div>'
+        + '<input type="file" id="impF" accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg" multiple style="display:none" onchange="showFileName()">'
+        + (dr ? '<div class="al aw">' + dr + '</div>' : '')
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'
+        + '<button class="btn bp" onclick="doGeminiExtract()" ' + (ok ? '' : 'disabled') + '>Geminiで読み取り（抽出＋箇条書き）</button>'
+        + '<button class="btn bo" onclick="doExtractPdfImages()" ' + (dc ? '' : 'disabled') + '>📄 PDFページを画像化してDriveに保存</button>'
+        + '</div>'
+        + (!dc ? '<div class="al aw" style="font-size:.8rem">PDF画像化にはDrive接続が必要です</div>' : '')
+        + '<div id="impR" style="margin-top:16px"></div></div>';
+    }
+
+    function renderSettings() {
+      const st = driveState.status, sl = { disconnected: '未接続', connecting: '接続中...', connected: '接続済み', error: 'エラー' }[st] || st;
+      const sc = { disconnected: 'bgd', connecting: 'bgw', connected: 'bgs', error: 'bgd' }[st] || 'bgd';
+      const c = st === 'connected', sk = getSetting('gemini_key_saved') === 'true';
+      return '<div class="card"><h2>⚙️ Google Drive設定</h2>'
+        + '<div class="ig"><label>Google Client ID</label><input type="text" id="cidI" value="' + EA(getClientId()) + '" placeholder="xxxx.apps.googleusercontent.com" onchange="setSetting(\'client_id\',this.value)"></div>'
+        + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><button class="btn bp" onclick="connectDrive()">Driveに接続</button><span class="bg ' + sc + '">' + sl + '</span></div>'
+        + (c ? '<div class="al ai">フォルダID: app=' + E(driveState.appFolderId || '—') + ' / book=' + E(driveState.bookFolderId || '—') + ' / ref=' + E(driveState.refFolderId || '—') + '</div>' : '')
+        + '<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn bo" onclick="doLoadDrive()" ' + (c ? '' : 'disabled') + '>Driveから読み込み</button><button class="btn bo" onclick="doSaveDrive()" ' + (c ? '' : 'disabled') + '>Driveへ保存</button></div>'
+        + '<div class="al ' + (navigator.onLine ? 'as' : 'aw') + '">オンライン状態: ' + (navigator.onLine ? 'オンライン' : 'オフライン') + '</div></div>'
+        + '<div class="card"><h2>🤖 Gemini API設定</h2>'
+        + '<div class="ig"><label>Gemini API Key</label><input type="password" id="gkI" value="' + EA(getGeminiKey()) + '" placeholder="AIza..." onchange="setSetting(\'gemini_key\',this.value)"><div style="margin-top:4px;font-size:.8rem"><a href="https://aistudio.google.com/apikey" target="_blank" class="ul">🔑 Google AI StudioでAPIキーを取得</a></div></div>'
+        + '<label class="tg" style="margin-bottom:8px"><input type="checkbox" ' + (sk ? 'checked' : '') + ' onchange="setSetting(\'gemini_key_saved\',this.checked?\'true\':\'false\');if(!this.checked)try{localStorage.removeItem(\'chie_gemini_key\')}catch(e){}"><span class="sl"></span>この端末に保存（自己責任）</label>'
+        + '<div class="al ad" style="font-size:.78rem">⚠️ APIキーをブラウザに保存すると、この端末にアクセスできる人は誰でもキーを閲覧できます。共有端末では保存しないでください。暗号化は行われません。</div>'
+        + '<div class="ig"><label>Geminiモデル名</label><select id="gmI" onchange="if(this.value===\'custom\'){document.getElementById(\'gmC\').style.display=\'block\'}else{document.getElementById(\'gmC\').style.display=\'none\';setSetting(\'gemini_model\',this.value)}" style="width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem">'
+        + ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].map(m => '<option value="' + m + '"' + (getGeminiModel() === m ? ' selected' : '') + '>' + m + '</option>').join('')
+        + '<option value="custom"' + (!['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].includes(getGeminiModel()) ? ' selected' : '') + '>カスタム...</option></select>'
+        + '<input type="text" id="gmC" value="' + EA(getGeminiModel()) + '" placeholder="モデル名を入力" onchange="setSetting(\'gemini_model\',this.value)" style="margin-top:6px;display:' + (!['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].includes(getGeminiModel()) ? 'block' : 'none') + '"></div>'
+        + '<button class="btn bo" onclick="doGeminiTest()">Gemini接続テスト</button><div id="gtR" style="margin-top:8px"></div>'
+        + '<div style="margin-top:12px;font-size:.85rem"><a href="https://ai.dev/rate-limit" target="_blank" class="ul">📊 無料枚の使用量を確認（Google AI Studio）</a></div></div>';
+    }
+
+    // ===== ACTIONS =====
+    async function doInit() {
+      const el = document.getElementById('initR'); if (!el) return; el.innerHTML = '<span class="ld"></span> 初期化中...';
+      try {
+        await ensureDriveFolders(); const f = await findNewestFile(driveState.bookFolderId);
+        if (f) { knowledgeBase = parseWorkbook(await downloadDriveFile(f)); persist(); lastLoadTime = new Date().toLocaleString('ja-JP'); el.innerHTML = '<div class="al as">初期化完了。「' + E(f.name) + '」を読み込みました（' + knowledgeBase.length + '件）</div>' }
+        else el.innerHTML = '<div class="al ai">フォルダを作成しました。ファイルはまだありません。知恵の書タブでデータを追加して保存してください。</div>';
+        toast('初期化完了', 's'); renderAll();
+      } catch (e) { el.innerHTML = '<div class="al ad">初期化失敗: ' + E(e.message) + '<br><button class="btn sm bw" onclick="doInit()" style="margin-top:8px">再試行</button></div>' }
+    }
+    function doAddRow() { addRow('', '', ''); renderAll() }
+    let _deleteTimer = null;
+    function doDelete(i, btn) {
+      if (btn.dataset.confirm === '1') {
+        clearTimeout(_deleteTimer);
+        deleteRow(i);
+        renderAll();
+      } else {
+        btn.dataset.confirm = '1';
+        const origText = btn.innerHTML;
+        const origBg = btn.style.backgroundColor;
+        btn.innerHTML = '本当に？';
+        btn.style.backgroundColor = '#c0392b';
+        btn.style.color = 'white';
+        _deleteTimer = setTimeout(() => {
+          btn.dataset.confirm = '0';
+          btn.innerHTML = origText;
+          btn.style.backgroundColor = origBg;
+        }, 3000);
+      }
+    }
+
+    let _editModalIdx = -1;
+    function openEditModal(i) {
+      _editModalIdx = i;
+      const r = knowledgeBase[i];
+      if (!r) return;
+      let h = '<div class="mo" id="editModal">';
+      h += '<div class="mo-hdr"><h3>行の編集 (#' + (i + 1) + ')</h3><button class="btn sm bo" onclick="closeEditModal()">閉じる</button></div>';
+      h += '<div class="mo-bdy">';
+      h += '<label class="m-lbl">情報</label><textarea id="moInfo" class="mo-inp" rows="5">' + E(r.info) + '</textarea>';
+      h += '<label class="m-lbl">重要語句</label><input type="text" id="moKw" class="mo-inp" value="' + EA(r.keywords || '') + '">';
+      h += '<label class="m-lbl">タグ</label><input type="text" id="moTags" class="mo-inp" value="' + EA(r.tags || '') + '">';
+      h += '<label class="m-lbl">記載日</label><input type="text" id="moDate" class="mo-inp" value="' + EA(r.date || '') + '">';
+      h += '<label class="m-lbl">参考文献</label><textarea id="moSrc" class="mo-inp" rows="3">' + E(r.source || '') + '</textarea>';
+      h += '</div>';
+      h += '<div class="mo-ftr">';
+      h += '<button class="btn bd" onclick="doModalDelete(' + i + ', this)" style="flex:1">削除</button>';
+      h += '<button class="btn bs" onclick="saveEditModal()" style="flex:2">保存</button>';
+      h += '</div></div>';
+      const m = document.createElement('div');
+      m.innerHTML = h;
+      document.body.appendChild(m.firstChild);
+    }
+    function closeEditModal() {
+      const m = document.getElementById('editModal');
+      if (m) m.remove();
+      _editModalIdx = -1;
+    }
+    function saveEditModal() {
+      const i = _editModalIdx;
+      if (i < 0 || !knowledgeBase[i]) return;
+      knowledgeBase[i].info = document.getElementById('moInfo')?.value || '';
+      knowledgeBase[i].keywords = document.getElementById('moKw')?.value || '';
+      knowledgeBase[i].tags = document.getElementById('moTags')?.value || '';
+      knowledgeBase[i].date = document.getElementById('moDate')?.value || '';
+      knowledgeBase[i].source = document.getElementById('moSrc')?.value || '';
+      persist(); markUnsaved(); closeEditModal(); renderAll(); toast('行' + (i + 1) + 'を保存しました', 's');
+    }
+    function doModalDelete(i, btn) {
+      if (btn.dataset.confirm === '1') {
+        clearTimeout(_deleteTimer); deleteRow(i); closeEditModal(); renderAll(); toast('削除しました', 's');
+      } else {
+        btn.dataset.confirm = '1'; btn.innerHTML = '本当に？'; btn.style.backgroundColor = '#c0392b'; btn.style.color = 'white';
+        _deleteTimer = setTimeout(() => { btn.dataset.confirm = '0'; btn.innerHTML = '削除'; btn.style.backgroundColor = ''; }, 3000);
+      }
+    }
+    async function doSaveDrive(isNew) { try { await saveToDrive(isNew); } catch (e) { toast('保存失敗: ' + e.message, 'e') } }
+    async function doLoadDrive() { try { await loadFromDrive(); hasUnsavedChanges = false; renderAll() } catch (e) { toast('読み込み失敗: ' + e.message, 'e') } }
+
+    async function doAsk() {
+      const inp = document.getElementById('askI'), el = document.getElementById('askR'); if (!inp || !el) return;
+      const q = inp.value.trim(); if (!q) { toast('質問を入力してください', 'e'); return }
+      el.innerHTML = '<span class="ld"></span> 検索中...';
+      try {
+        if (getRefreshBeforeAsk() && accessToken) { try { await loadFromDrive() } catch (e) { el.innerHTML += '<br><span class="al aw" style="display:inline-block;margin-top:4px">Drive最新取得に失敗（ローカルキャッシュで検索します）: ' + E(e.message) + '</span>' } }
+        const res = searchKnowledge(q);
+        if (!res || res.length === 0) { el.innerHTML = '<div class="card" style="margin-top:0"><div class="al aw">「' + E(q) + '」に該当する情報は知恵の書にありません。</div></div>'; return }
+        let h = '<div class="card" style="margin-top:0"><h3>🔍 「' + E(q) + '」の検索結果（' + res.length + '件）</h3>';
+        if (isMobile()) {
+          h += '<div class="tw-m">';
+          res.forEach(r => {
+            const idx = knowledgeBase.indexOf(r.item);
+            h += '<div class="m-card">';
+            h += '<div class="m-idx">#' + (idx + 1) + ' <span style="font-size:0.7rem;font-weight:normal;color:var(--text2)">(' + Math.round((1 - r.score) * 100) + '%一致)</span></div>';
+            h += '<div class="m-val" style="margin-top:20px;font-size:1.05rem">' + E(r.item.info) + '</div>';
+            if (r.item.source) h += '<div class="m-lbl" style="margin-top:12px;color:var(--accent)">🔗 参考文献</div><div class="m-val" style="margin-bottom:0;font-size:0.85rem">' + urls(r.item.source) + '</div>';
+            h += '</div>';
+          });
+          h += '</div></div>';
+        } else {
+          h += '<div class="tw"><table><thead><tr><th style="width:40px">行#</th><th>情報</th><th style="width:100px">重要語句</th><th style="width:90px">記載日</th><th style="width:160px">参考文献</th><th style="width:55px">一致度</th></tr></thead><tbody>';
+          res.forEach(r => { const idx = knowledgeBase.indexOf(r.item); h += '<tr><td>' + (idx + 1) + '</td><td>' + E(r.item.info) + '</td><td>' + E(r.item.keywords || '') + '</td><td>' + E(r.item.date) + '</td><td>' + urls(r.item.source) + '</td><td>' + Math.round((1 - r.score) * 100) + '%</td></tr>' });
+          h += '</tbody></table></div></div>';
+        }
+        el.innerHTML = h;
+      } catch (e) { el.innerHTML = '<div class="al ad">エラー: ' + E(e.message) + '</div>' }
+    }
+
+    async function callGeminiAdvancedSearch(q, docsText, useWeb) {
+      const key = getGeminiKey(); if (!key) throw new Error('Gemini API Keyが設定されていません');
+      const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel() + ':generateContent?key=' + key;
+      const prompt = 'あなたは優秀なリサーチャーです。以下の【ユーザーの質問】に対して、【参考情報（知恵の書）】' + (useWeb ? 'とインターネット検索結果' : '') + 'を用いて、網羅的かつわかりやすく回答をまとめてください。\n\n【重要ルール】\n' + (useWeb ? '- 常に【参考情報（知恵の書）】の内容を最優先（重み付け最大）として回答を組み立ててください。インターネット検索結果は、知恵の書に情報が不足している場合の補完としてのみ使用してください。ただし、知恵の書に情報が全く見当たらない場合はインターネット検索結果をメインにしても構いません。\n' : '') + '- 回答内の各事実や文章の末尾には、必ずその情報源を示すURL（知恵の書記載のURL、またはWeb検索で見つけたURL）を、[参考](URL) の形式のハイパーリンクにして付与してください。\n- 情報源が不明な推測は書かないでください。\n\n【ユーザーの質問】\n' + q + '\n\n【参考情報（知恵の書）】\n' + docsText;
+      const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2 } };
+      if (useWeb) body.tools = [{ googleSearch: {} }];
+
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) { const t = await r.text(); throw new Error('APIエラー: ' + r.status + ' ' + t) }
+      const d = await r.json();
+      const htmlText = marked.parse(d.candidates?.[0]?.content?.parts?.[0]?.text || '回答を生成できませんでした。');
+      return htmlText.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ');
+    }
+
+    async function doAdvancedSearch() {
+      const inp = document.getElementById('askI'), el = document.getElementById('askR'); if (!inp || !el) return;
+      const q = inp.value.trim(); if (!q) { toast('質問を入力してください', 'e'); return }
+      const key = getGeminiKey(); if (!key) { toast('設定タブからGemini API Keyを設定してください', 'e'); return }
+
+      const useWeb = confirm('LLMでアドバンス検索（回答生成）を行います。\n同時にインターネットの最新情報も含めて検索・回答しますか？');
+
+      el.innerHTML = '<div class="al aw"><span class="ld"></span> <span id="advSt">フェーズ1: 検索キーワード考案中...</span></div>';
+      try {
+        if (getRefreshBeforeAsk() && accessToken) { await loadFromDrive() }
+
+        // Phase 1: Query Expansion
+        const expUrl = 'https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel() + ':generateContent?key=' + key;
+        const expPrompt = "ユーザーの質問に答えるため、知識ベース(Fuse.js)から検索すべき複数の関連キーワード(スペース区切り)を生成してください。理由などは一切含めず、キーワードだけを1行で出力してください。\n質問: " + q;
+        const expRes = await fetch(expUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: expPrompt }] }], generationConfig: { temperature: 0.1 } }) });
+        if (!expRes.ok) { const errText = await expRes.text(); throw new Error('クエリ拡張エラー: ' + expRes.status + ' ' + errText); }
+        const expData = await expRes.json();
+        const expandedQuery = expData.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || q;
+
+        document.getElementById('advSt').innerText = 'フェーズ2: 「' + expandedQuery + '」で知恵の書を検索中...';
+
+        // Phase 2: Search (Max 999)
+        const res = multiTermSearch(expandedQuery, knowledgeBase, ['info', 'keywords', 'tags', 'source'], 0.5).slice(0, 999);
+        let docsText = res.length > 0 ? res.map(r => '【情報】' + r.item.info + '\n【URL】' + (r.item.source || 'なし')).join('\n\n') : '該当情報なし。';
+
+        document.getElementById('advSt').innerText = 'フェーズ3: AIが回答を最終生成中...';
+
+        // Extract unique sources for UI
+        const uniqueSources = [];
+        res.forEach(r => {
+          if (r.item.source) {
+            r.item.source.split('\n').map(s => s.trim()).filter(Boolean).forEach(s => {
+              if (s.match(/^https?:\/\//) && !uniqueSources.includes(s)) uniqueSources.push(s);
+            });
+          }
+        });
+
+        let sourcesHtml = '';
+        if (uniqueSources.length > 0) {
+          sourcesHtml = '<div style="margin-bottom:16px"><div style="font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:8px">📚 参考文献 (知恵の書より)</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
+          uniqueSources.slice(0, 10).forEach((src, idx) => {
+            let domain = src;
+            try { domain = new URL(src).hostname.replace('www.', '') } catch (e) { }
+            sourcesHtml += '<a href="' + EA(src) + '" target="_blank" rel="noopener noreferrer" style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:0.8rem;color:var(--text);text-decoration:none;transition:border-color 0.2s" onmouseover="this.style.borderColor=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'"><span style="color:var(--accent);font-weight:600">[' + (idx + 1) + ']</span> <span style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + E(domain) + '</span></a>';
+          });
+          sourcesHtml += '</div></div>';
+        }
+
+        // Phase 3: RAG with Grounding
+        const finalAnswerHtml = await callGeminiAdvancedSearch(q, docsText, useWeb);
+
+        el.innerHTML = '<div class="card" style="margin-top:0"><h3>✨ アドバンス検索結果</h3><div style="font-size:0.85rem;color:var(--text2);margin-bottom:16px">検索キーワード: ' + E(expandedQuery) + ' / 参考件数: ' + res.length + '件</div>' + sourcesHtml + '<div class="mkd" style="border-top:1px solid var(--border);padding-top:16px">' + finalAnswerHtml + '</div></div>';
+      } catch (e) {
+        el.innerHTML = '<div class="al ad">エラー: ' + E(e.message) + '</div>';
+      }
+    }
+
+    async function doGeminiExtract() {
+      const fi = document.getElementById('impF'), el = document.getElementById('impR'); if (!fi || !el) return;
+      if (!fi.files || !fi.files.length) { toast('ファイルを選択またはドロップしてください', 'e'); return }
+      const files = Array.from(fi.files);
+      const allBullets = []; let allText = '';
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileUrl = (_uploadedFileUrls && _uploadedFileUrls[i]) || '';
+        el.innerHTML = '<span class="ld"></span> Geminiで解析中... (' + (i + 1) + '/' + files.length + ') ' + E(file.name) + ' (' + (file.size / 1024).toFixed(1) + 'KB)';
+        try {
+          const { mimeType, base64 } = await fileToBase64(file);
+          const r = await callGeminiExtract(mimeType, base64);
+          if (r.bullets) r.bullets.forEach(b => allBullets.push({ text: b, fileUrl: fileUrl }));
+          if (r.extracted_text) allText += (allText ? '\n\n--- ' + file.name + ' ---\n' : '') + r.extracted_text;
+        } catch (e) {
+          if (e.message.startsWith('RATE_LIMIT:')) {
+            const sec = parseInt(e.message.split(':')[1]);
+            await new Promise(resolve => {
+              let rem = sec; const t = setInterval(() => {
+                const pct = Math.round((1 - rem / sec) * 100);
+                el.innerHTML = '<div class="al aw"><div style="font-weight:600;margin-bottom:8px">⚠️ レート制限 (' + (i + 1) + '/' + files.length + ') ' + E(file.name) + '</div><div style="background:var(--border);border-radius:4px;height:8px;margin-bottom:8px"><div style="background:linear-gradient(90deg,var(--accent),var(--accent2));height:100%;border-radius:4px;width:' + pct + '%;transition:width 1s"></div></div><div>自動リトライまで <b>' + rem + '秒</b></div></div>';
+                if (rem <= 0) { clearInterval(t); resolve() } rem--;
+              }, 1000);
+            });
+            i--; continue;
+          }
+          allText += (allText ? '\n\n' : '') + '❗ ' + file.name + ': ' + e.message;
+        }
+      }
+      importState = { extracted_text: allText, bullets: allBullets, urls: [] };
+      el.innerHTML = ''; renderImpRes(el);
+      if (files.length > 1) toast(files.length + 'ファイルの解析が完了しました', 's');
+    }
+
+    function startRetryCountdown(el, sec, retryFn) {
+      let remaining = sec;
+      const update = () => {
+        const pct = Math.round((1 - remaining / sec) * 100);
+        el.innerHTML = '<div class="al aw"><div style="font-weight:600;margin-bottom:8px">⚠️ APIレート制限に達しました</div><div style="background:var(--border);border-radius:4px;height:8px;margin-bottom:8px"><div style="background:linear-gradient(90deg,var(--accent),var(--accent2));height:100%;border-radius:4px;width:' + pct + '%;transition:width 1s"></div></div><div>自動リトライまで <b>' + remaining + '秒</b></div><div style="font-size:.8rem;margin-top:4px"><a href="https://ai.dev/rate-limit" target="_blank" class="ul">使用量を確認</a></div></div>';
+        if (remaining <= 0) { clearInterval(timer); el.innerHTML = '<div class="al ai"><span class="ld"></span> 自動リトライ中...</div>'; eval(retryFn); return }
+        remaining--;
+      };
+      update(); const timer = setInterval(update, 1000);
+    }
+
+    async function doExtractPdfImages() {
+      const fi = document.getElementById('impF'), el = document.getElementById('impR'); if (!fi || !el) return;
+      if (!fi.files || !fi.files.length) { toast('ファイルを選択してください', 'e'); return }
+      const file = fi.files[0];
+      if (!file.name.toLowerCase().endsWith('.pdf')) { toast('PDFファイルを選択してください', 'e'); return }
+      if (!driveState.refFolderId) { try { await ensureDriveFolders() } catch (e) { toast('フォルダ準備に失敗: ' + e.message, 'e'); return } }
+      el.innerHTML = '<span class="ld"></span> PDFを読み込み中...';
+      try {
+        const ab = await file.arrayBuffer();
+        const pdfjsLib = window.pdfjsLib;
+        if (!pdfjsLib) { toast('pdf.jsの読み込みに失敗しました。ページをリロードしてください。', 'e'); return }
+        const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+        const totalPages = pdf.numPages;
+        const baseName = file.name.replace(/\.pdf$/i, '');
+        const uploadedUrls = [];
+        for (let p = 1; p <= totalPages; p++) {
+          el.innerHTML = '<span class="ld"></span> ページ ' + p + ' / ' + totalPages + ' を画像化中...';
+          const page = await pdf.getPage(p);
+          const scale = 2;
+          const vp = page.getViewport({ scale });
+          const canvas = document.createElement('canvas');
+          canvas.width = vp.width; canvas.height = vp.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+          const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+          const imgName = baseName + '_page' + p + '.png';
+          el.innerHTML = '<span class="ld"></span> ページ ' + p + ' / ' + totalPages + ' をDriveにアップロード中...';
+          const meta = { name: imgName, parents: [driveState.refFolderId] };
+          const form = new FormData();
+          form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+          form.append('file', blob);
+          const r = await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,webContentLink', { method: 'POST', body: form, headers: {} });
+          const d = await r.json();
+          const viewUrl = d.webViewLink || ('https://drive.google.com/file/d/' + d.id + '/view');
+          uploadedUrls.push(viewUrl);
+        }
+        importState.urls = [...(importState.urls || []), ...uploadedUrls];
+        let resultHtml = '<div class="al as">✅ ' + totalPages + 'ページの画像をDrive「参考書」フォルダに保存しました</div>';
+        resultHtml += '<h3 style="margin-top:12px">アップロード済み画像URL</h3><div style="max-height:200px;overflow:auto;border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:12px">';
+        uploadedUrls.forEach((u, i) => { resultHtml += '<div style="font-size:.8rem;margin-bottom:4px">' + (i + 1) + '. <a href="' + u + '" target="_blank" class="ul">' + u + '</a></div>' });
+        resultHtml += '</div><div class="al ai" style="font-size:.8rem">これらのURLは「知恵の書に追記」時に参考文献として自動的に追加されます</div>';
+        if (importState.bullets && importState.bullets.length > 0) { renderImpRes(el); el.innerHTML = resultHtml + el.innerHTML; }
+        else { el.innerHTML = resultHtml; }
+        toast(totalPages + 'ページの画像を保存しました', 's');
+      } catch (e) { el.innerHTML = '<div class="al ad">PDF画像化エラー: ' + E(e.message) + '<br><button class="btn sm bw" onclick="doExtractPdfImages()" style="margin-top:8px">再試行</button></div>' }
+    }
+
+    function getUniqueTags() {
+      const ts = new Set();
+      knowledgeBase.forEach(r => { if (r.tags) r.tags.split(',').forEach(t => { const tg = t.trim(); if (tg) ts.add(tg); }); });
+      return Array.from(ts).sort();
+    }
+
+    function renderImpRes(el) {
+      let h = '<div class="card" style="margin-top:0"><h3>抽出テキスト</h3><textarea id="exT" rows="5" style="margin-bottom:12px">' + E(importState.extracted_text) + '</textarea>';
+      h += '<h3>箇条書き（編集可能）</h3><div id="bL">';
+      importState.bullets.forEach((b, i) => {
+        const text = typeof b === 'object' ? b.text : b;
+        const url = typeof b === 'object' ? (b.fileUrl || '') : '';
+        h += '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="' + EA(text) + '" onchange="importState.bullets[' + i + ']=(typeof importState.bullets[' + i + ']=== \'object\')?Object.assign(importState.bullets[' + i + '],{text:this.value}):this.value" style="flex:1" placeholder="情報">';
+        if (url) h += '<a href="' + EA(url) + '" target="_blank" title="参照元" style="font-size:.75rem;white-space:nowrap">📎</a>';
+        h += '<button class="btn sm bd" onclick="importState.bullets.splice(' + i + ',1);renderImpRes(document.getElementById(\'impR\'))">✕</button></div>';
+      });
+      h += '<button class="btn sm bo" onclick="importState.bullets.push({text:\'\',fileUrl:\'\'});renderImpRes(document.getElementById(\'impR\'))">＋ 箇条書き追加</button></div>';
+
+      const tags = getUniqueTags();
+      h += '<div style="margin-top:16px;margin-bottom:12px"><div style="font-weight:600;margin-bottom:4px">🏷️ タグを追加（複数可・カンマ区切り）</div>';
+      h += '<input type="text" id="impTags" list="tagList" placeholder="例: エコー, 消化器" style="width:100%;max-width:300px;background:var(--bg);border:1px solid var(--border);padding:8px;border-radius:4px;color:var(--text)">';
+      h += '<datalist id="tagList">';
+      tags.forEach(t => h += '<option value="' + EA(t) + '">');
+      h += '</datalist></div>';
+
+      h += '<div style="margin-top:16px"><button class="btn bs" onclick="doAppendBullets()">知恵の書に追記</button></div></div></div>';
+      el.innerHTML = h;
+    }
+
+    async function doAppendBullets() {
+      const bullets = importState.bullets.filter(b => (typeof b === 'object' ? b.text : b).trim()); if (!bullets.length) { toast('追記する箇条書きがありません', 'e'); return }
+      const tags = document.getElementById('impTags')?.value || '';
+      const conflicts = []; bullets.forEach((b, i) => { const text = typeof b === 'object' ? b.text : b; const sims = findSimilar(text); if (sims.length > 0) conflicts.push({ bulletIdx: i, bullet: text, fileUrl: typeof b === 'object' ? b.fileUrl : '', similar: sims }) });
+      if (conflicts.length > 0) { showSimUI(conflicts, tags); return }
+      appendKnowledgeFromBullets(bullets, new Date().toLocaleDateString('ja-JP'), tags);
+      toast(bullets.length + '件を追記しました', 's');
+      if (accessToken) { try { await saveToDrive('取り込み追記') } catch (e) { toast('Drive保存失敗: ' + e.message, 'e') } }
+      importState = { extracted_text: '', bullets: [], urls: [] }; _uploadedFileUrl = ''; _uploadedFileUrls = []; renderAll();
+    }
+
+    function showSimUI(conflicts, tags = '') {
+      const el = document.getElementById('impR'); if (!el) return;
+      window._ic = conflicts.map((c, i) => ({ ...c, _action: 'pending', _tags: tags }));
+      let h = '<div class="card" style="margin-top:12px"><h3>類似チェック結果（' + conflicts.length + '件）</h3>';
+      conflicts.forEach((c, ci) => {
+        const sim = c.similar[0];
+        h += '<div id="simItem_' + ci + '" style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">';
+        h += '<div class="bg bgw" style="margin-bottom:8px">類似度: ' + Math.round(sim.similarity * 100) + '% — 行' + (sim.index + 1) + '</div>';
+        h += '<div style="margin-bottom:8px"><h4 style="color:var(--text2)">📄 既存（行' + (sim.index + 1) + '）</h4><p style="font-size:.85rem;padding:8px;background:var(--bg);border-radius:6px;margin:4px 0">' + E(knowledgeBase[sim.index].keywords ? '🔑 ' + knowledgeBase[sim.index].keywords + '<br>' : '') + E(sim.item.info) + '</p></div>';
+        h += '<div><h4 style="color:var(--accent)">🆕 新規（編集可能）</h4>';
+        h += '<textarea id="simNew_' + ci + '" rows="2" style="font-size:.85rem;margin-top:4px">' + E(c.bullet) + '</textarea></div>';
+        h += '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn sm bp" onclick="doSimReplace(' + ci + ',' + sim.index + ')">既存を置き換え</button><button class="btn sm bo" onclick="doSimAdd(' + ci + ')">新規追加（既存保持）</button><button class="btn sm bd" onclick="doSimDelete(' + ci + ')">削除（変更なし）</button></div>';
+        h += '</div>';
+      });
+      h += '<button class="btn bs" onclick="doSimFinish()" style="margin-top:8px">残りを全てスキップして完了</button></div>';
+      el.innerHTML += h;
+    }
+    function doSimReplace(ci, existingIdx) {
+      const ta = document.getElementById('simNew_' + ci); if (!ta) return;
+      const newText = ta.value.trim();
+      const kwInp = document.getElementById('simNewKw_' + ci);
+      const newKw = kwInp ? kwInp.value.trim() : (window._ic[ci].keywords || '');
+      if (!newText) { toast('新規文章が空です', 'e'); return }
+      updateRow(existingIdx, 'info', newText);
+      const fileUrl = window._ic[ci].fileUrl || '';
+      if (fileUrl) updateRow(existingIdx, 'source', [knowledgeBase[existingIdx].source, fileUrl].filter(Boolean).join('\n'));
+      if (newKw) {
+        const oldKw = knowledgeBase[existingIdx].keywords || '';
+        const mergedKw = Array.from(new Set([...oldKw.split(','), ...newKw.split(',')].map(k => k.trim()).filter(Boolean))).join(', ');
+        updateRow(existingIdx, 'keywords', mergedKw);
+      }
+      const newTags = window._ic[ci]._tags || '';
+      if (newTags) {
+        const oldTags = knowledgeBase[existingIdx].tags || '';
+        const mergedTags = Array.from(new Set([...oldTags.split(','), ...newTags.split(',')].map(k => k.trim()).filter(Boolean))).join(', ');
+        updateRow(existingIdx, 'tags', mergedTags);
+      }
+      updateRow(existingIdx, 'date', new Date().toLocaleDateString('ja-JP'));
+      window._ic[ci]._action = 'replaced';
+      const item = document.getElementById('simItem_' + ci);
+      if (item) item.innerHTML = '<div class="al as" style="font-size:.85rem">✅ 行' + (existingIdx + 1) + 'を置き換えました</div>';
+      toast('行' + (existingIdx + 1) + 'を更新しました', 's');
+    }
+    function doSimDelete(ci) {
+      window._ic[ci]._action = 'deleted';
+      const item = document.getElementById('simItem_' + ci);
+      if (item) item.innerHTML = '<div class="al ai" style="font-size:.85rem">⏭ スキップ（変更なし）</div>';
+      toast('スキップしました', 'i');
+    }
+    function doSimAdd(ci) {
+      const ta = document.getElementById('simNew_' + ci); if (!ta) return;
+      const newText = ta.value.trim();
+      if (!newText) { toast('新規文章が空です', 'e'); return }
+      const fileUrl = window._ic[ci].fileUrl || '';
+      const tags = window._ic[ci]._tags || '';
+      addRow(newText, new Date().toLocaleDateString('ja-JP'), fileUrl, '', tags);
+      window._ic[ci]._action = 'added';
+      const item = document.getElementById('simItem_' + ci);
+      if (item) item.innerHTML = '<div class="al as" style="font-size:.85rem">➕ 新規行として追加しました</div>';
+      toast('新規追加しました', 's');
+    }
+    async function doSimFinish() {
+      if (!window._ic) return;
+      const pending = window._ic.filter(c => c._action === 'pending');
+      pending.forEach(c => { c._action = 'deleted' });
+      const tags = window._ic.length > 0 ? (window._ic[0]._tags || '') : '';
+      const nonConflictBullets = importState.bullets.filter((b, i) => !window._ic.find(c => c.bulletIdx === i)).filter(b => (typeof b === 'object' ? b.text : b).trim());
+      if (nonConflictBullets.length > 0) appendKnowledgeFromBullets(nonConflictBullets, new Date().toLocaleDateString('ja-JP'), tags);
+      if (accessToken) { try { await saveToDrive('取り込み完了') } catch (e) { toast('Drive保存失敗: ' + e.message, 'e') } }
+      const replaced = window._ic.filter(c => c._action === 'replaced').length;
+      const skipped = window._ic.filter(c => c._action === 'deleted').length;
+      importState = { extracted_text: '', bullets: [], urls: [] }; _uploadedFileUrl = ''; window._ic = null;
+      toast('完了（置換' + replaced + '件 / スキップ' + skipped + '件 / 新規' + nonConflictBullets.length + '件）', 's'); renderAll();
+    }
+    async function doGeminiTest() {
+      const el = document.getElementById('gtR'); if (!el) return; const key = getGeminiKey();
+      if (!key) { el.innerHTML = '<div class="al ad">API Keyが未設定です</div>'; return }
+      el.innerHTML = '<span class="ld"></span> テスト中...';
+      try {
+        const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + getGeminiModel() + ':generateContent?key=' + key, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: 'テスト。「OK」とだけ返してください。' }] }] }) });
+        if (!r.ok) { const t = await r.text(); throw new Error(r.status + ' ' + t) } const d = await r.json(); el.innerHTML = '<div class="al as">接続成功: ' + E(d.candidates?.[0]?.content?.parts?.[0]?.text || '応答なし') + '</div>';
+      } catch (e) { el.innerHTML = '<div class="al ad">接続失敗: ' + E(e.message) + '<br><button class="btn sm bw" onclick="doGeminiTest()" style="margin-top:8px">再試行</button></div>' }
+    }
+
+    // ===== INIT =====
+    function initApp() { restore(); renderAll(); window.addEventListener('online', () => { toast('オンラインに復帰', 's'); renderAll() }); window.addEventListener('offline', () => { toast('オフラインです', 'e'); renderAll() }) }
+    function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('over'); const fi = document.getElementById('impF'); if (e.dataTransfer.files.length > 0) { fi.files = e.dataTransfer.files; onFileSelected() } }
+    function showFileName() { onFileSelected() }
+    async function onFileSelected() {
+      const fi = document.getElementById('impF'); const dz = document.getElementById('dropZone'); if (!fi || !fi.files.length) return;
+      const files = Array.from(fi.files);
+      _uploadedFileUrls = [];
+      let summary = files.map(f => '✅ ' + E(f.name) + ' (' + (f.size / 1024).toFixed(1) + 'KB)').join('<br>');
+      dz.innerHTML = '📂 ここにファイルをドラッグ＆ドロップ<br><span style="font-size:.8rem">または クリックして選択（複数可）</span><div class="fn">' + summary + '</div>';
+      if (accessToken && driveState.status === 'connected') {
+        if (!driveState.refFolderId) { try { await ensureDriveFolders() } catch (e) { return } }
+        dz.innerHTML += '<div style="margin-top:4px;font-size:.8rem;color:var(--text2)"><span class="ld"></span> Driveにアップロード中... (0/' + files.length + ')</div>';
+        const uploadedLinks = [];
+        for (let i = 0; i < files.length; i++) {
+          try {
+            const meta = { name: files[i].name, parents: [driveState.refFolderId] };
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' })); form.append('file', files[i]);
+            const r = await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', { method: 'POST', body: form, headers: {} });
+            const d = await r.json();
+            const viewUrl = d.webViewLink || ('https://drive.google.com/file/d/' + d.id + '/view');
+            _uploadedFileUrls.push(viewUrl);
+            if (!importState.urls) importState.urls = [];
+            if (!importState.urls.includes(viewUrl)) importState.urls.push(viewUrl);
+            uploadedLinks.push('<a href="' + viewUrl + '" target="_blank" class="ul" style="font-size:.8rem">' + E(files[i].name) + '</a>');
+          } catch (e) { uploadedLinks.push('<span style="color:var(--danger)">' + E(files[i].name) + ': 失敗</span>') }
+          dz.querySelector('div:last-child').innerHTML = '<span class="ld"></span> Driveにアップロード中... (' + (i + 1) + '/' + files.length + ')';
+        }
+        _uploadedFileUrl = _uploadedFileUrls[0] || '';
+        dz.innerHTML = '📂 ここにファイルをドラッグ＆ドロップ<br><span style="font-size:.8rem">または クリックして選択（複数可）</span><div class="fn">' + summary + '</div><div style="margin-top:4px;font-size:.8rem;color:var(--success)">📁 Driveアップロード済み: ' + uploadedLinks.join(' ・ ') + '</div>';
+        toast(files.length + 'ファイルをDrive「参考書」に保存しました', 's');
+      }
+    }
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
 </body>
+
 </html>
