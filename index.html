@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>知恵の書</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0f1117;--surface:#1a1d27;--card:#22252f;--border:#2e3140;--accent:#6c63ff;--accent2:#00d4aa;--text:#e8e9ed;--text2:#9ca0b0;--danger:#ff4757;--warn:#ffa502;--success:#2ed573;--radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4)}
+body{font-family:'Segoe UI','Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+.header{background:linear-gradient(135deg,#1a1d27 0%,#2a1f4e 100%);padding:16px 24px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.header h1{font-size:1.4rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header .status-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);animation:pulse 2s infinite}
+.header .status-dot.connected{background:var(--success)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto}
+.tab-btn{padding:12px 20px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:.9rem;white-space:nowrap;transition:all .3s;position:relative}
+.tab-btn:hover{color:var(--text);background:rgba(108,99,255,.1)}
+.tab-btn.active{color:var(--accent)}
+.tab-btn.active::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px 2px 0 0}
+.main{flex:1;padding:16px;max-width:1200px;margin:0 auto;width:100%}
+.panel{display:none;animation:fadeIn .3s}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card h2{font-size:1.1rem;margin-bottom:12px;color:var(--accent)}
+.card h3{font-size:.95rem;margin-bottom:8px;color:var(--accent2)}
+.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:.85rem;font-weight:600;transition:all .2s;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.1)}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#8b5cf6);color:#fff}
+.btn-success{background:linear-gradient(135deg,var(--success),#00b894);color:#fff}
+.btn-danger{background:linear-gradient(135deg,var(--danger),#e84393);color:#fff}
+.btn-warn{background:linear-gradient(135deg,var(--warn),#e17055);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-sm{padding:6px 12px;font-size:.8rem}
+input[type="text"],input[type="password"],textarea,select{width:100%;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;transition:border .2s}
+input:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{resize:vertical;min-height:100px;font-family:inherit}
+.input-group{margin-bottom:12px}
+.input-group label{display:block;font-size:.8rem;color:var(--text2);margin-bottom:4px}
+.alert{padding:12px 16px;border-radius:8px;font-size:.85rem;margin-bottom:12px}
+.alert-info{background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.3);color:#a5a0ff}
+.alert-success{background:rgba(46,213,115,.15);border:1px solid rgba(46,213,115,.3);color:var(--success)}
+.alert-warn{background:rgba(255,165,2,.15);border:1px solid rgba(255,165,2,.3);color:var(--warn)}
+.alert-danger{background:rgba(255,71,87,.15);border:1px solid rgba(255,71,87,.3);color:var(--danger)}
+.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.75rem;font-weight:600}
+.badge-success{background:rgba(46,213,115,.2);color:var(--success)}
+.badge-danger{background:rgba(255,71,87,.2);color:var(--danger)}
+.badge-warn{background:rgba(255,165,2,.2);color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th{background:var(--surface);padding:10px;text-align:left;font-weight:600;color:var(--text2);border-bottom:2px solid var(--border);position:sticky;top:0}
+td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover{background:rgba(108,99,255,.05)}
+.table-wrap{max-height:60vh;overflow:auto;border-radius:8px;border:1px solid var(--border)}
+.toggle{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem}
+.toggle input{display:none}
+.toggle .slider{width:40px;height:22px;background:var(--border);border-radius:11px;position:relative;transition:.3s}
+.toggle .slider::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:var(--accent)}
+.toggle input:checked+.slider::after{left:21px}
+.compare-ui{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
+.compare-side{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px}
+.compare-side h4{font-size:.8rem;color:var(--text2);margin-bottom:8px}
+.loading{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top:2px solid var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.url-link{color:var(--accent2);text-decoration:none;word-break:break-all}
+.url-link:hover{text-decoration:underline}
+.bullet-list{list-style:none;padding:0}
+.bullet-list li{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.bullet-list li:last-child{border:none}
+.bullet-text{flex:1}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center}
+.stat-card .val{font-size:1.6rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .lbl{font-size:.75rem;color:var(--text2);margin-top:4px}
+#toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{padding:12px 20px;border-radius:8px;color:#fff;font-size:.85rem;animation:slideIn .3s;box-shadow:var(--shadow)}
+.toast-success{background:linear-gradient(135deg,#2ed573,#00b894)}
+.toast-error{background:linear-gradient(135deg,#ff4757,#e84393)}
+.toast-info{background:linear-gradient(135deg,#6c63ff,#8b5cf6)}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}
+@media(max-width:600px){.header h1{font-size:1.1rem}.main{padding:8px}.compare-ui{grid-template-columns:1fr}.stat-grid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div class="header">
+<h1>📖 知恵の書</h1>
+<div class="status-dot" id="headerDot" title="Drive未接続"></div>
+<span style="font-size:.75rem;color:var(--text2)" id="headerStatus">未接続</span>
+</div>
+<div class="tabs" id="tabBar"></div>
+<div class="main" id="mainContent"></div>
+<script>
+// ===== STATE =====
+let knowledgeBase = [];
+let accessToken = null;
+let driveState = {status:'disconnected',appFolderId:null,bookFolderId:null,refFolderId:null,canonicalFileId:null};
+let lastLoadTime = null;
+const TAB_NAMES = ['ホーム','知恵の書','質問','取り込み','設定'];
+let activeTab = 0;
+
+// ===== SETTINGS =====
+function getSetting(k,d=''){try{return localStorage.getItem('chie_'+k)||d}catch(e){return d}}
+function setSetting(k,v){try{localStorage.setItem('chie_'+k,v)}catch(e){}}
+function getClientId(){return getSetting('client_id')}
+function getGeminiKey(){return getSetting('gemini_key')}
+function getGeminiModel(){return getSetting('gemini_model','gemini-2.0-flash')}
+function getRefreshBeforeAsk(){return getSetting('refresh_before_ask','on')==='on'}
+
+// ===== TOAST =====
+function toast(msg,type='info'){const c=document.getElementById('toast-container');const t=document.createElement('div');t.className='toast toast-'+type;t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),4000)}
+
+// ===== PERSIST / RESTORE =====
+function persist(){try{localStorage.setItem('chienosho_data',JSON.stringify(knowledgeBase))}catch(e){}}
+function restore(){try{const d=localStorage.getItem('chienosho_data');if(d)knowledgeBase=JSON.parse(d)}catch(e){knowledgeBase=[]}}
+
+// ===== EXCEL =====
+function buildWorkbookBlob(){
+  const ws_data=[['情報','記載日','参考文献']];
+  knowledgeBase.forEach(r=>ws_data.push([r.info||'',r.date||'',r.source||'']));
+  const ws=XLSX.utils.aoa_to_sheet(ws_data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'知恵の書');
+  const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  return new Blob([wbout],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function parseWorkbook(arrayBuffer){
+  const wb=XLSX.read(arrayBuffer,{type:'array'});
+  const ws=wb.Sheets['知恵の書']||wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+  const result=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];
+    if(!r||!r[0])continue;
+    result.push({info:String(r[0]||''),date:String(r[1]||''),source:String(r[2]||'')});
+  }
+  return result;
+}
+
+// ===== DRIVE HELPERS =====
+async function driveApiFetch(url,opts={}){
+  if(!accessToken)throw new Error('Driveに未接続です');
+  const h=opts.headers||{};
+  h['Authorization']='Bearer '+accessToken;
+  opts.headers=h;
+  const r=await fetch(url,opts);
+  if(!r.ok){const t=await r.text();throw new Error('Drive API エラー: '+r.status+' '+t)}
+  return r;
+}
+
+async function findOrCreateFolder(name,parentId){
+  let q="mimeType='application/vnd.google-apps.folder' and name='"+name+"' and trashed=false";
+  if(parentId)q+=" and '"+parentId+"' in parents";
+  else q+=" and 'root' in parents";
+  const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)&spaces=drive');
+  const data=await r.json();
+  if(data.files&&data.files.length>0)return data.files[0].id;
+  const meta={name:name,mimeType:'application/vnd.google-apps.folder'};
+  if(parentId)meta.parents=[parentId];
+  const cr=await driveApiFetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(meta)});
+  const cd=await cr.json();
+  return cd.id;
+}
+
+async function ensureDriveFolders(){
+  const appFolderId=await findOrCreateFolder('知恵の書app',null);
+  const bookFolderId=await findOrCreateFolder('知恵の書',appFolderId);
+  const refFolderId=await findOrCreateFolder('参考書',appFolderId);
+  driveState.appFolderId=appFolderId;
+  driveState.bookFolderId=bookFolderId;
+  driveState.refFolderId=refFolderId;
+  return{appFolderId,bookFolderId,refFolderId};
+}
+
+async function findCanonicalFile(bookFolderId){
+  const q="name='知恵の書.xlsx' and '"+bookFolderId+"' in parents and trashed=false";
+  const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc&spaces=drive');
+  const data=await r.json();
+  if(!data.files||data.files.length===0)return null;
+  if(data.files.length>1)toast('警告: 同名の正本が複数あります。最新を使用します。','error');
+  return{fileId:data.files[0].id,modifiedTime:data.files[0].modifiedTime};
+}
+
+async function downloadDriveFile(fileId){
+  const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files/'+fileId+'?alt=media');
+  return await r.arrayBuffer();
+}
+
+async function uploadOrUpdateCanonical(bookFolderId,blob,existingFileId){
+  if(existingFileId){
+    const r=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files/'+existingFileId+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:blob});
+    const d=await r.json();return d.id;
+  }else{
+    const meta={name:'知恵の書.xlsx',parents:[bookFolderId]};
+    const form=new FormData();
+    form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+    form.append('file',blob);
+    const r=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',body:form,headers:{}});
+    const d=await r.json();return d.id;
+  }
+}
+
+async function createBackupFile(bookFolderId,blob,timestampName){
+  const meta={name:timestampName,parents:[bookFolderId]};
+  const form=new FormData();
+  form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+  form.append('file',blob);
+  const r=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',body:form,headers:{}});
+  return await r.json();
+}
+
+async function loadFromDriveCanonical(){
+  if(!accessToken)throw new Error('Driveに未接続です');
+  if(!driveState.bookFolderId)await ensureDriveFolders();
+  const f=await findCanonicalFile(driveState.bookFolderId);
+  if(!f){toast('正本ファイルが見つかりません。新規作成されます。','info');return}
+  driveState.canonicalFileId=f.fileId;
+  const ab=await downloadDriveFile(f.fileId);
+  knowledgeBase=parseWorkbook(ab);
+  persist();
+  lastLoadTime=new Date().toLocaleString('ja-JP');
+  toast('Driveから読み込み完了（'+knowledgeBase.length+'件）','success');
+}
+
+async function saveToDriveWithBackup(reasonText){
+  if(!accessToken)throw new Error('Driveに未接続です');
+  if(!driveState.bookFolderId)await ensureDriveFolders();
+  const blob=buildWorkbookBlob();
+  let canonRes;
+  try{
+    canonRes=await uploadOrUpdateCanonical(driveState.bookFolderId,blob,driveState.canonicalFileId);
+    driveState.canonicalFileId=canonRes;
+  }catch(e){throw new Error('正本の保存に失敗: '+e.message)}
+  const now=new Date();
+  const ts='知恵の書 '+now.getFullYear()+'.'+(now.getMonth()+1)+'.'+now.getDate()+'.'+now.getHours()+'.'+now.getMinutes()+'.'+now.getSeconds()+'.xlsx';
+  try{await createBackupFile(driveState.bookFolderId,blob,ts)}catch(e){
+    toast('本体保存成功 / バックアップ失敗: '+e.message,'error');
+    renderAll();return;
+  }
+  persist();
+  toast((reasonText||'保存')+'完了（正本+バックアップ）','success');
+}
+
+// ===== SEARCH & ANSWER =====
+function searchKnowledge(query){
+  if(!query||knowledgeBase.length===0)return[];
+  const fuse=new Fuse(knowledgeBase,{keys:['info','source'],threshold:0.4,includeScore:true,includeMatches:true});
+  return fuse.search(query).slice(0,10);
+}
+function generateAnswerRuleBased(query,results){
+  if(!results||results.length===0)return{answer:'知恵の書内に該当情報がありません。\n\n追加を検討すべき情報：\n・「'+query+'」に関連する事実や定義\n・関連する参考文献URL',evidence:[]};
+  let answer='【質問】'+query+'\n\n【回答】\n';
+  const evidence=[];
+  results.forEach((r,i)=>{
+    const idx=knowledgeBase.indexOf(r.item);
+    answer+=(i+1)+'. '+r.item.info+'\n';
+    evidence.push({row:idx+1,info:r.item.info,date:r.item.date,source:r.item.source,score:r.score});
+  });
+  return{answer,evidence};
+}
+
+// ===== GEMINI =====
+async function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>{const b64=reader.result.split(',')[1];resolve({mimeType:file.type||'application/octet-stream',base64:b64})};
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function callGeminiExtract(mimeType,base64Data){
+  const key=getGeminiKey();
+  if(!key)throw new Error('Gemini API Keyが設定されていません');
+  const model=getGeminiModel();
+  const url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
+  const body={
+    contents:[{parts:[
+      {inlineData:{mimeType:mimeType,data:base64Data}},
+      {text:'このファイルの内容を分析し、重要ポイントを厳選して要約してください。箇条書きの数が多すぎないよう、内容の質は保ったまま、抽出する数を必要最小限にまとめてください。以下のJSON形式のみで返してください。JSON以外のテキストは一切含めないでください。\n{"extracted_text":"内容を要約した抽出テキスト全文","bullets":["厳選・要約された箇条書き1","厳選・要約された箇条書き2"],"urls":["抽出したURL1"]}'}
+    ]}],
+    generationConfig:{responseMimeType:'application/json'}
+  };
+  const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!r.ok){const t=await r.text();throw new Error('Gemini API エラー: '+r.status+' '+t)}
+  const data=await r.json();
+  const text=data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if(!text)throw new Error('Geminiからの応答が空です');
+  try{return JSON.parse(text)}catch(e){
+    const m=text.match(/\{[\s\S]*\}/);
+    if(m)try{return JSON.parse(m[0])}catch(e2){}
+    throw new Error('Geminiの返答が不正なJSONです: '+text.substring(0,200));
+  }
+}
+
+// ===== KNOWLEDGE OPS =====
+function addRow(info='',date='',source=''){
+  if(!date)date=new Date().toLocaleDateString('ja-JP');
+  knowledgeBase.push({info,date,source});
+  persist();
+}
+function updateRow(index,field,value){
+  if(knowledgeBase[index])knowledgeBase[index][field]=value;
+  persist();
+}
+function deleteRow(index){
+  knowledgeBase.splice(index,1);
+  persist();
+}
+function appendKnowledgeFromBullets(bullets,date,urls){
+  const src=(urls||[]).join('\n');
+  if(!date)date=new Date().toLocaleDateString('ja-JP');
+  bullets.forEach(b=>{if(b.trim())knowledgeBase.push({info:b.trim(),date:date,source:src})});
+  persist();
+}
+
+// ===== SIMILARITY =====
+function jaccard(a,b){
+  const sa=new Set(a.toLowerCase().split(/\s+/));
+  const sb=new Set(b.toLowerCase().split(/\s+/));
+  const inter=new Set([...sa].filter(x=>sb.has(x)));
+  const union=new Set([...sa,...sb]);
+  return union.size?inter.size/union.size:0;
+}
+function findSimilar(text){
+  const results=[];
+  knowledgeBase.forEach((r,i)=>{
+    const sim=jaccard(text,r.info);
+    if(sim>0.2)results.push({index:i,item:r,similarity:sim});
+  });
+  results.sort((a,b)=>b.similarity-a.similarity);
+  return results.slice(0,5);
+}
+
+// ===== GOOGLE AUTH =====
+function connectDrive(){
+  const clientId=getClientId();
+  if(!clientId){toast('設定でGoogle Client IDを入力してください','error');return}
+  driveState.status='connecting';
+  renderAll();
+  const tClient=google.accounts.oauth2.initTokenClient({
+    client_id:clientId,
+    scope:'https://www.googleapis.com/auth/drive.file',
+    callback:(resp)=>{
+      if(resp.error){driveState.status='error';toast('認証エラー: '+resp.error,'error');renderAll();return}
+      accessToken=resp.access_token;
+      driveState.status='connected';
+      document.getElementById('headerDot').classList.add('connected');
+      document.getElementById('headerStatus').textContent='接続済み';
+      toast('Google Driveに接続しました','success');
+      renderAll();
+    }
+  });
+  tClient.requestAccessToken();
+}
+
+// ===== RENDER =====
+function renderAll(){renderTabs();renderPanel()}
+function renderTabs(){
+  const bar=document.getElementById('tabBar');
+  bar.innerHTML=TAB_NAMES.map((n,i)=>'<button class="tab-btn'+(i===activeTab?' active':'')+'" onclick="activeTab='+i+';renderAll()">'+n+'</button>').join('');
+}
+function switchTab(i){activeTab=i;renderAll()}
+
+function renderPanel(){
+  const mc=document.getElementById('mainContent');
+  const panels=[renderHome,renderBook,renderAsk,renderImport,renderSettings];
+  mc.innerHTML='<div class="panel active">'+panels[activeTab]()+'</div>';
+  bindEvents();
+}
+
+function makeUrlsClickable(src){
+  if(!src)return'<span style="color:var(--text2)">—</span>';
+  return src.split('\n').filter(u=>u.trim()).map(u=>{
+    if(u.match(/^https?:\/\//))return'<a href="'+u.trim()+'" target="_blank" class="url-link">'+u.trim()+'</a>';
+    return u;
+  }).join('<br>');
+}
+
+function renderHome(){
+  const isConn=driveState.status==='connected';
+  return '<div class="card"><h2>📖 知恵の書へようこそ</h2><p style="color:var(--text2);margin-bottom:16px">知恵の書は、あなたの知識をExcelファイルとしてGoogle Driveに保存・管理するアプリです。ファイルやURLから知識を取り込み、いつでも質問で検索できます。</p>'
+    +'<div class="stat-grid"><div class="stat-card"><div class="val">'+knowledgeBase.length+'</div><div class="lbl">登録データ数</div></div>'
+    +'<div class="stat-card"><div class="val">'+(lastLoadTime||'—')+'</div><div class="lbl">最終読込</div></div>'
+    +'<div class="stat-card"><div class="val"><span class="badge '+(isConn?'badge-success':'badge-danger')+'">'+(isConn?'接続済み':'未接続')+'</span></div><div class="lbl">Drive状態</div></div></div></div>'
+    +'<div class="card"><h3>初期セットアップ</h3>'
+    +'<button class="btn btn-primary" onclick="doInit()" '+(isConn?'':'disabled')+'>Driveに接続して初期化（フォルダ作成＋正本確認）</button>'
+    +(!isConn?' <span style="font-size:.8rem;color:var(--text2)">※先に設定タブでDriveに接続してください</span>':'')
+    +'<div id="initResult" style="margin-top:12px"></div></div>';
+}
+
+function renderBook(){
+  const isConn=driveState.status==='connected';
+  let html='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px"><h2>📚 知恵の書</h2><div style="display:flex;gap:8px">'
+    +'<button class="btn btn-sm btn-success" onclick="doAddRow()">＋ 行追加</button>'
+    +'<button class="btn btn-sm btn-primary" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Driveへ保存</button></div></div>'
+    +'<div class="input-group"><input type="text" id="bookSearch" placeholder="検索..." oninput="renderAll()"></div>';
+  const q=document.getElementById('bookSearch')?.value||'';
+  let filtered=knowledgeBase.map((r,i)=>({...r,_i:i}));
+  if(q){const fuse=new Fuse(filtered,{keys:['info','source'],threshold:0.4});filtered=fuse.search(q).map(r=>r.item)}
+  html+='<div class="table-wrap"><table><thead><tr><th style="width:40px">#</th><th>情報</th><th style="width:100px">記載日</th><th style="width:180px">参考文献</th><th style="width:80px">操作</th></tr></thead><tbody>';
+  if(filtered.length===0)html+='<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">データがありません</td></tr>';
+  else filtered.forEach(r=>{
+    html+='<tr><td>'+(r._i+1)+'</td>'
+      +'<td contenteditable="true" onblur="updateRow('+r._i+',\'info\',this.textContent)">'+escHtml(r.info)+'</td>'
+      +'<td contenteditable="true" onblur="updateRow('+r._i+',\'date\',this.textContent)">'+escHtml(r.date)+'</td>'
+      +'<td>'+makeUrlsClickable(r.source)+'<br><input type="text" style="font-size:.75rem;margin-top:4px" value="'+escAttr(r.source)+'" onchange="updateRow('+r._i+',\'source\',this.value)" placeholder="URL（改行=複数）"></td>'
+      +'<td><button class="btn btn-sm btn-danger" onclick="if(confirm(\'削除しますか？\')){deleteRow('+r._i+');renderAll()}">削除</button></td></tr>';
+  });
+  html+='</tbody></table></div></div>';
+  return html;
+}
+
+function renderAsk(){
+  const isConn=driveState.status==='connected';
+  return '<div class="card"><h2>❓ 質問</h2>'
+    +'<div class="input-group"><label>質問内容</label><input type="text" id="askInput" placeholder="知恵の書に質問する..."></div>'
+    +'<label class="toggle" style="margin-bottom:12px"><input type="checkbox" id="refreshToggle" '+(getRefreshBeforeAsk()?'checked':'')+' onchange="setSetting(\'refresh_before_ask\',this.checked?\'on\':\'off\')"><span class="slider"></span>質問前にDriveから最新を取得</label>'
+    +'<button class="btn btn-primary" onclick="doAsk()" id="askBtn">検索して回答</button>'
+    +'<div id="askResult" style="margin-top:16px"></div></div>';
+}
+
+function renderImport(){
+  const isConn=driveState.status==='connected';
+  const hasKey=!!getGeminiKey();
+  const online=navigator.onLine;
+  const canGemini=hasKey&&online;
+  let disableReason='';
+  if(!hasKey)disableReason='Gemini API Keyが未設定です。設定タブで入力してください。';
+  else if(!online)disableReason='オフラインのためGemini機能は使用できません。';
+  return '<div class="card"><h2>📥 ファイル取り込み</h2>'
+    +'<div class="input-group"><label>ファイルを選択（PDF/DOCX/PPTX/TXT/MD/PNG/JPG）</label><input type="file" id="importFile" accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg" style="padding:8px"></div>'
+    +(disableReason?'<div class="alert alert-warn">'+disableReason+'</div>':'')
+    +'<button class="btn btn-primary" onclick="doGeminiExtract()" '+(canGemini?'':'disabled')+'>Geminiで読み取り（抽出＋箇条書き）</button>'
+    +'<div id="importResult" style="margin-top:16px"></div></div>';
+}
+
+function renderSettings(){
+  const st=driveState.status;
+  const stLabel={disconnected:'未接続',connecting:'接続中...',connected:'接続済み',error:'エラー'}[st]||st;
+  const stClass={disconnected:'badge-danger',connecting:'badge-warn',connected:'badge-success',error:'badge-danger'}[st]||'badge-danger';
+  const isConn=st==='connected';
+  const savedKey=getSetting('gemini_key_saved')==='true';
+  return '<div class="card"><h2>⚙️ Google Drive設定</h2>'
+    +'<div class="input-group"><label>Google Client ID</label><input type="text" id="clientIdInput" value="'+escAttr(getClientId())+'" placeholder="xxxx.apps.googleusercontent.com" onchange="setSetting(\'client_id\',this.value)"></div>'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><button class="btn btn-primary" onclick="connectDrive()">Driveに接続</button><span class="badge '+stClass+'">'+stLabel+'</span></div>'
+    +(isConn?'<div class="alert alert-info">フォルダID: app='+escHtml(driveState.appFolderId||'—')+' / book='+escHtml(driveState.bookFolderId||'—')+' / ref='+escHtml(driveState.refFolderId||'—')+'</div>':'')
+    +'<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-outline" onclick="doLoadDrive()" '+(isConn?'':'disabled')+'>Driveから読み込み</button><button class="btn btn-outline" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Driveへ保存</button></div>'
+    +'<div class="alert '+(navigator.onLine?'alert-success':'alert-warn')+'">オンライン状態: '+(navigator.onLine?'オンライン':'オフライン')+'</div></div>'
+    +'<div class="card"><h2>🤖 Gemini API設定</h2>'
+    +'<div class="input-group"><label>Gemini API Key</label><input type="password" id="geminiKeyInput" value="'+escAttr(getGeminiKey())+'" placeholder="AIza..." onchange="setSetting(\'gemini_key\',this.value)"></div>'
+    +'<label class="toggle" style="margin-bottom:8px"><input type="checkbox" id="saveKeyCheck" '+(savedKey?'checked':'')+' onchange="onSaveKeyToggle(this.checked)"><span class="slider"></span>この端末に保存（自己責任）</label>'
+    +'<div class="alert alert-danger" style="font-size:.78rem">⚠️ APIキーをブラウザに保存すると、この端末にアクセスできる人は誰でもキーを閲覧できます。共有端末では保存しないでください。暗号化は行われません。</div>'
+    +'<div class="input-group"><label>Geminiモデル名</label><input type="text" id="geminiModelInput" value="'+escAttr(getGeminiModel())+'" placeholder="gemini-2.0-flash" onchange="setSetting(\'gemini_model\',this.value)"></div>'
+    +'<button class="btn btn-outline" onclick="doGeminiTest()">Gemini接続テスト</button>'
+    +'<div id="geminiTestResult" style="margin-top:8px"></div></div>';
+}
+
+// ===== RENDER TABLE (exported) =====
+function renderTable(){renderAll()}
+
+// ===== UTILITIES =====
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function escAttr(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
+
+// ===== EVENT HANDLERS =====
+function bindEvents(){}
+
+async function doInit(){
+  const el=document.getElementById('initResult');
+  if(!el)return;
+  el.innerHTML='<div class="loading"></div> 初期化中...';
+  try{
+    await ensureDriveFolders();
+    const f=await findCanonicalFile(driveState.bookFolderId);
+    if(f){driveState.canonicalFileId=f.fileId;const ab=await downloadDriveFile(f.fileId);knowledgeBase=parseWorkbook(ab);persist();lastLoadTime=new Date().toLocaleString('ja-JP');
+      el.innerHTML='<div class="alert alert-success">初期化完了。正本を読み込みました（'+knowledgeBase.length+'件）</div>';}
+    else{el.innerHTML='<div class="alert alert-info">フォルダを作成しました。正本ファイルはまだありません。知恵の書タブでデータを追加して保存してください。</div>';}
+    toast('初期化完了','success');
+    renderAll();
+  }catch(e){el.innerHTML='<div class="alert alert-danger">初期化失敗: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doInit()" style="margin-top:8px">再試行</button></div>'}
+}
+
+function doAddRow(){
+  addRow('','','');
+  renderAll();
+}
+
+async function doSaveDrive(){
+  try{await saveToDriveWithBackup('知恵の書保存');renderAll()}catch(e){toast('保存失敗: '+e.message,'error')}
+}
+
+async function doLoadDrive(){
+  try{await loadFromDriveCanonical();renderAll()}catch(e){toast('読み込み失敗: '+e.message,'error')}
+}
+
+async function doAsk(){
+  const input=document.getElementById('askInput');
+  const el=document.getElementById('askResult');
+  if(!input||!el)return;
+  const q=input.value.trim();
+  if(!q){toast('質問を入力してください','error');return}
+  el.innerHTML='<div class="loading"></div> 検索中...';
+  try{
+    if(getRefreshBeforeAsk()&&accessToken){
+      try{await loadFromDriveCanonical()}catch(e){el.innerHTML+='<br><span class="alert alert-warn" style="display:inline-block;margin-top:4px">Drive最新取得に失敗（ローカルキャッシュで回答します）: '+escHtml(e.message)+'</span>'}
+    }
+    const results=searchKnowledge(q);
+    const{answer,evidence}=generateAnswerRuleBased(q,results);
+    let html='<div class="card" style="margin-top:0"><h3>回答</h3><pre style="white-space:pre-wrap;font-family:inherit;color:var(--text)">'+escHtml(answer)+'</pre>';
+    if(evidence.length>0){
+      html+='<h3 style="margin-top:12px">根拠</h3><div class="table-wrap"><table><thead><tr><th>行#</th><th>情報</th><th>記載日</th><th>参考文献</th></tr></thead><tbody>';
+      evidence.forEach(e=>{
+        html+='<tr><td>'+e.row+'</td><td>'+escHtml(e.info)+'</td><td>'+escHtml(e.date)+'</td><td>'+makeUrlsClickable(e.source)+'</td></tr>';
+      });
+      html+='</tbody></table></div>';
+    }
+    html+='</div>';
+    el.innerHTML=html;
+  }catch(e){el.innerHTML='<div class="alert alert-danger">エラー: '+escHtml(e.message)+'</div>'}
+}
+
+// ===== IMPORT =====
+let importState={extracted_text:'',bullets:[],urls:[]};
+
+async function doGeminiExtract(){
+  const fileInput=document.getElementById('importFile');
+  const el=document.getElementById('importResult');
+  if(!fileInput||!el)return;
+  if(!fileInput.files||fileInput.files.length===0){toast('ファイルを選択してください','error');return}
+  const file=fileInput.files[0];
+  el.innerHTML='<div class="loading"></div> Geminiで解析中... (ファイルサイズ: '+(file.size/1024).toFixed(1)+'KB)';
+  try{
+    const{mimeType,base64}=await fileToBase64(file);
+    const result=await callGeminiExtract(mimeType,base64);
+    importState=result;
+    if(!importState.bullets)importState.bullets=[];
+    if(!importState.urls)importState.urls=[];
+    if(!importState.extracted_text)importState.extracted_text='';
+    renderImportResult(el);
+  }catch(e){
+    el.innerHTML='<div class="alert alert-danger">Gemini読み取りエラー: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doGeminiExtract()" style="margin-top:8px">再試行</button></div>';
+  }
+}
+
+function renderImportResult(el){
+  let html='<div class="card" style="margin-top:0"><h3>抽出テキスト</h3><textarea id="extractedText" rows="5" style="margin-bottom:12px">'+escHtml(importState.extracted_text)+'</textarea>';
+  html+='<h3>箇条書き（編集可能）</h3><div id="bulletsList">';
+  importState.bullets.forEach((b,i)=>{
+    html+='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="'+escAttr(b)+'" onchange="importState.bullets['+i+']=this.value" style="flex:1"><button class="btn btn-sm btn-danger" onclick="importState.bullets.splice('+i+',1);renderImportResult(document.getElementById(\'importResult\'))">✕</button></div>';
+  });
+  html+='<button class="btn btn-sm btn-outline" onclick="importState.bullets.push(\'\');renderImportResult(document.getElementById(\'importResult\'))">＋ 箇条書き追加</button></div>';
+  html+='<h3 style="margin-top:12px">URL（編集可能）</h3><div id="urlsList">';
+  importState.urls.forEach((u,i)=>{
+    html+='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="'+escAttr(u)+'" onchange="importState.urls['+i+']=this.value" style="flex:1"><button class="btn btn-sm btn-danger" onclick="importState.urls.splice('+i+',1);renderImportResult(document.getElementById(\'importResult\'))">✕</button></div>';
+  });
+  html+='<button class="btn btn-sm btn-outline" onclick="importState.urls.push(\'\');renderImportResult(document.getElementById(\'importResult\'))">＋ URL追加</button>';
+  html+='<div style="margin-top:16px"><button class="btn btn-success" onclick="doAppendBullets()">知恵の書に追記</button></div></div></div>';
+  el.innerHTML=html;
+}
+
+async function doAppendBullets(){
+  const bullets=importState.bullets.filter(b=>b.trim());
+  if(bullets.length===0){toast('追記する箇条書きがありません','error');return}
+  // Check similarity
+  const conflicts=[];
+  bullets.forEach((b,i)=>{
+    const sims=findSimilar(b);
+    if(sims.length>0)conflicts.push({bulletIdx:i,bullet:b,similar:sims});
+  });
+  if(conflicts.length>0){
+    await showSimilarityUI(conflicts);
+    return;
+  }
+  appendKnowledgeFromBullets(bullets,new Date().toLocaleDateString('ja-JP'),importState.urls);
+  toast(bullets.length+'件を追記しました','success');
+  if(accessToken){try{await saveToDriveWithBackup('取り込み追記')}catch(e){toast('Drive保存失敗: '+e.message,'error')}}
+  importState={extracted_text:'',bullets:[],urls:[]};
+  renderAll();
+}
+
+async function showSimilarityUI(conflicts){
+  const el=document.getElementById('importResult');
+  if(!el)return;
+  let html='<div class="card" style="margin-top:12px"><h3>類似チェック結果</h3>';
+  conflicts.forEach((c,ci)=>{
+    const sim=c.similar[0];
+    const level=sim.similarity>0.6?'高':sim.similarity>0.35?'中':'低';
+    html+='<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">';
+    html+='<div class="badge '+(level==='高'?'badge-danger':level==='中'?'badge-warn':'badge-success')+'">類似度: '+level+' ('+Math.round(sim.similarity*100)+'%)</div>';
+    if(level==='高'){
+      const merged=c.bullet.length>sim.item.info.length?c.bullet:sim.item.info;
+      const mergedSrc=[sim.item.source,...importState.urls].filter(Boolean).join('\n');
+      html+='<p style="color:var(--text2);font-size:.85rem;margin:8px 0">統合案（重複を1行に統合し参考文献をマージ）:</p>';
+      html+='<textarea id="merge_'+ci+'" rows="2" style="margin-bottom:8px">'+escHtml(merged)+'</textarea>';
+      html+='<button class="btn btn-sm btn-primary" onclick="doMergeSim('+ci+','+sim.index+')">統合して更新</button> ';
+      html+='<button class="btn btn-sm btn-outline" onclick="doSkipSim('+ci+')">スキップ（新規追加）</button>';
+    }else if(level==='中'){
+      html+='<div class="compare-ui"><div class="compare-side"><h4>既存（行'+(sim.index+1)+'）</h4><p>'+escHtml(sim.item.info)+'</p></div>';
+      html+='<div class="compare-side"><h4>新規</h4><p>'+escHtml(c.bullet)+'</p></div></div>';
+      html+='<textarea id="merge_'+ci+'" rows="2" placeholder="最終テキストを入力..." style="margin-bottom:8px">'+escHtml(c.bullet)+'</textarea>';
+      html+='<button class="btn btn-sm btn-primary" onclick="doMergeSim('+ci+','+sim.index+')">この内容で既存を更新</button> ';
+      html+='<button class="btn btn-sm btn-outline" onclick="doSkipSim('+ci+')">新規追加</button>';
+    }else{
+      html+='<p style="font-size:.85rem;margin:4px 0">新規追加: '+escHtml(c.bullet)+'</p>';
+      html+='<button class="btn btn-sm btn-success" onclick="doSkipSim('+ci+')">新規追加</button>';
+    }
+    html+='</div>';
+  });
+  html+='<button class="btn btn-success" onclick="doFinishImport()" style="margin-top:8px">残りを全て新規追加して完了</button></div>';
+  el.innerHTML+=html;
+  window._importConflicts=conflicts;
+}
+
+async function doMergeSim(conflictIdx,existingIdx){
+  const ta=document.getElementById('merge_'+conflictIdx);
+  if(ta){
+    updateRow(existingIdx,'info',ta.value);
+    const merged=[knowledgeBase[existingIdx].source,...importState.urls].filter(Boolean).join('\n');
+    updateRow(existingIdx,'source',merged);
+  }
+  if(window._importConflicts)window._importConflicts[conflictIdx]._done=true;
+  toast('統合しました','success');
+}
+
+async function doSkipSim(conflictIdx){
+  if(window._importConflicts){
+    const c=window._importConflicts[conflictIdx];
+    addRow(c.bullet,new Date().toLocaleDateString('ja-JP'),importState.urls.join('\n'));
+    c._done=true;
+  }
+  toast('新規追加しました','success');
+}
+
+async function doFinishImport(){
+  const remaining=importState.bullets.filter((b,i)=>{
+    if(!window._importConflicts)return true;
+    return!window._importConflicts.find(c=>c.bulletIdx===i&&c._done);
+  }).filter(b=>b.trim());
+  if(remaining.length>0)appendKnowledgeFromBullets(remaining,new Date().toLocaleDateString('ja-JP'),importState.urls);
+  if(accessToken){try{await saveToDriveWithBackup('取り込み完了')}catch(e){toast('Drive保存失敗: '+e.message,'error')}}
+  importState={extracted_text:'',bullets:[],urls:[]};
+  window._importConflicts=null;
+  toast('取り込み完了','success');
+  renderAll();
+}
+
+function onSaveKeyToggle(checked){
+  setSetting('gemini_key_saved',checked?'true':'false');
+  if(!checked){try{localStorage.removeItem('chie_gemini_key')}catch(e){}}
+}
+
+async function doGeminiTest(){
+  const el=document.getElementById('geminiTestResult');
+  if(!el)return;
+  const key=getGeminiKey();
+  if(!key){el.innerHTML='<div class="alert alert-danger">API Keyが未設定です</div>';return}
+  el.innerHTML='<div class="loading"></div> テスト中...';
+  try{
+    const model=getGeminiModel();
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:[{parts:[{text:'テスト。「OK」とだけ返してください。'}]}]})
+    });
+    if(!r.ok){const t=await r.text();throw new Error(r.status+' '+t)}
+    const d=await r.json();
+    const txt=d.candidates?.[0]?.content?.parts?.[0]?.text||'応答なし';
+    el.innerHTML='<div class="alert alert-success">接続成功: '+escHtml(txt)+'</div>';
+  }catch(e){el.innerHTML='<div class="alert alert-danger">接続失敗: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doGeminiTest()" style="margin-top:8px">再試行</button></div>'}
+}
+
+// ===== INIT =====
+function initApp(){
+  restore();
+  renderAll();
+  window.addEventListener('online',()=>{toast('オンラインに復帰','success');renderAll()});
+  window.addEventListener('offline',()=>{toast('オフラインです','error');renderAll()});
+}
+document.addEventListener('DOMContentLoaded',initApp);
+</script>
+</body>
+</html>
