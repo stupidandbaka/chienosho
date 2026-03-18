@@ -998,10 +998,10 @@
         title.innerHTML += ' <span style="color:#e74c3c;font-size:0.8rem;background:#fcebe9;padding:2px 6px;border-radius:4px">未保存</span>';
       }
     }
-    function addRow(info = '', date = '', source = '', keywords = '', tags = '') { if (!date) date = new Date().toLocaleDateString('ja-JP'); knowledgeBase.push({ info, keywords, tags, date, source }); persist(); markUnsaved(); renderAll(); }
+    function addRow(info = '', date = '', source = '', keywords = '', tags = '') { if (!date) date = new Date().toLocaleDateString('ja-JP'); knowledgeBase.push({ info, keywords, tags, date, source }); persist(); markUnsaved(); }
     function updateRow(i, f, v) { if (knowledgeBase[i] && knowledgeBase[i][f] !== v) { knowledgeBase[i][f] = v; persist(); markUnsaved(); } }
     function deleteRow(i) { knowledgeBase.splice(i, 1); persist(); markUnsaved(); }
-    function appendKnowledgeFromBullets(bullets, date, tags = '') { if (!date) date = new Date().toLocaleDateString('ja-JP'); bullets.forEach(b => { const text = typeof b === 'object' ? b.text : b; const src = typeof b === 'object' ? (b.fileUrl || '') : ''; const kw = typeof b === 'object' ? (b.keywords || '') : ''; if (text && text.trim()) knowledgeBase.push({ info: text.trim(), keywords: kw, tags, date, source: src }) }); persist(); markUnsaved(); renderAll(); }
+    function appendKnowledgeFromBullets(bullets, date, tags = '') { if (!date) date = new Date().toLocaleDateString('ja-JP'); bullets.forEach(b => { const text = typeof b === 'object' ? b.text : b; const src = typeof b === 'object' ? (b.fileUrl || '') : ''; const kw = typeof b === 'object' ? (b.keywords || '') : ''; if (text && text.trim()) knowledgeBase.push({ info: text.trim(), keywords: kw, tags, date, source: src }) }); persist(); markUnsaved(); }
 
     // ===== SIMILARITY =====
     function jaccard(a, b) { const sa = new Set(a.toLowerCase().split(/\s+/)); const sb = new Set(b.toLowerCase().split(/\s+/)); const it = new Set([...sa].filter(x => sb.has(x))); const un = new Set([...sa, ...sb]); return un.size ? it.size / un.size : 0 }
@@ -1029,9 +1029,18 @@
     // ===== RENDER =====
     function renderAll() {
       const scrollY = window.scrollY;
+      const tw = document.querySelector('.tw');
+      const twScroll = tw ? tw.scrollTop : 0;
       renderTabs();
       renderPanel();
-      requestAnimationFrame(() => window.scrollTo(0, scrollY));
+      window.scrollTo(0, scrollY);
+      const newTw = document.querySelector('.tw');
+      if (newTw) newTw.scrollTop = twScroll;
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+        const nextTw = document.querySelector('.tw');
+        if (nextTw) nextTw.scrollTop = twScroll;
+      });
     }
     function renderTabs() { document.getElementById('tabBar').innerHTML = TABS.map((n, i) => '<button class="tb' + (i === activeTab ? ' active' : '') + '" onclick="activeTab=' + i + ';renderAll()">' + n + '</button>').join('') }
     function renderTable() { renderAll() }
@@ -1088,7 +1097,12 @@
 
     function updateBookBody() {
       const el = document.getElementById('bookBody');
-      if (el) el.innerHTML = renderBookBody();
+      if (!el) return;
+      const tw = document.querySelector('.tw');
+      const twScroll = tw ? tw.scrollTop : 0;
+      el.innerHTML = renderBookBody();
+      const newTw = document.querySelector('.tw');
+      if (newTw) newTw.scrollTop = twScroll;
     }
 
     function renderBookBody() {
