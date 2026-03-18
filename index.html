@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 
 <head>
@@ -949,7 +949,7 @@
     // ===== SEARCH =====
     function multiTermSearch(query, list, keys, threshold = 0.5) {
       if (!query) return list.map(item => ({ item, score: 0 }));
-      const terms = query.split(/[\s　]+/).filter(Boolean);
+      const terms = query.split(/[\s　,，、]+/).filter(Boolean);
       if (!terms.length) return list.map(item => ({ item, score: 0 }));
 
       const opts = { keys, threshold, distance: 200, minMatchCharLength: 1, includeScore: true, ignoreLocation: true };
@@ -1031,7 +1031,7 @@
       const scrollY = window.scrollY;
       renderTabs();
       renderPanel();
-      window.scrollTo(0, scrollY);
+      requestAnimationFrame(() => window.scrollTo(0, scrollY));
     }
     function renderTabs() { document.getElementById('tabBar').innerHTML = TABS.map((n, i) => '<button class="tb' + (i === activeTab ? ' active' : '') + '" onclick="activeTab=' + i + ';renderAll()">' + n + '</button>').join('') }
     function renderTable() { renderAll() }
@@ -1080,10 +1080,22 @@
         + '<button class="btn sm bo" onclick="doLoadDrive()" ' + (c ? '' : 'disabled') + '>🔄 読込</button>'
         + '<button class="btn sm bp" onclick="doSaveDrive(false)" ' + (c ? '' : 'disabled') + '>上書き保存</button>'
         + '<button class="btn sm bo" onclick="doSaveDrive(true)" ' + (c ? '' : 'disabled') + '>新たに保存</button></div></div>'
-        + '<div class="ig" style="margin-bottom:0"><input type="text" id="bkS" placeholder="検索..." oninput="renderAll()"></div></div>';
+        + '<div class="ig" style="margin-bottom:0"><input type="text" id="bkS" placeholder="検索..." oninput="updateBookBody()" value="' + EA(document.getElementById('bkS')?.value || '') + '"></div></div>';
+      h += '<div id="bookBody">' + renderBookBody() + '</div>';
+      h += '<div id="kwPopup" style="display:none;position:absolute;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.2);padding:6px"><button class="btn sm bp" onclick="registerSelectedKeyword()" style="white-space:nowrap;font-size:0.85rem">🔑 重要語句に登録</button></div>';
+      return h;
+    }
+
+    function updateBookBody() {
+      const el = document.getElementById('bookBody');
+      if (el) el.innerHTML = renderBookBody();
+    }
+
+    function renderBookBody() {
       const q = document.getElementById('bkS')?.value || '';
       let fl = knowledgeBase.map((r, i) => ({ ...r, _i: i }));
       if (q) fl = multiTermSearch(q, fl, ['info', 'source', 'keywords', 'tags'], 0.4).map(r => r.item);
+      let h = '';
 
       if (isMobile()) {
         h += '<div class="tw-m">';
@@ -1105,9 +1117,8 @@
         h += '<div class="tw"><table><thead><tr><th style="width:40px">#</th><th>情報</th><th style="width:120px">重要語句</th><th style="width:100px">タグ</th><th style="width:100px">記載日</th><th style="width:180px">参考文献</th><th style="width:80px">操作</th></tr></thead><tbody>';
         if (!fl.length) h += '<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:20px">データがありません</td></tr>';
         else fl.forEach(r => { h += '<tr><td>' + (r._i + 1) + '</td><td id="kbInfo_' + r._i + '" contenteditable="true" onblur="updateRow(' + r._i + ',\'info\',this.textContent)" onmouseup="handleInfoSelection(' + r._i + ', event)">' + E(r.info) + '</td><td id="kbKw_' + r._i + '" contenteditable="true" onblur="updateRow(' + r._i + ',\'keywords\',this.textContent)">' + E(r.keywords || '') + '</td><td contenteditable="true" onblur="updateRow(' + r._i + ',\'tags\',this.textContent)">' + E(r.tags || '') + '</td><td contenteditable="true" onblur="updateRow(' + r._i + ',\'date\',this.textContent)">' + E(r.date) + '</td><td>' + urls(r.source) + '<br><input type="text" style="font-size:.75rem;margin-top:4px" value="' + EA(r.source) + '" onchange="updateRow(' + r._i + ',\'source\',this.value)" placeholder="URL"></td><td><button class="btn sm bd" onclick="doDelete(' + r._i + ', this)">削除</button></td></tr>' });
-        h += '</tbody></table></div></div>';
+        h += '</tbody></table></div>';
       }
-      h += '<div id="kwPopup" style="display:none;position:absolute;z-index:9999;background:var(--bg);border:1px solid var(--border);border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,0.2);padding:6px"><button class="btn sm bp" onclick="registerSelectedKeyword()" style="white-space:nowrap;font-size:0.85rem">🔑 重要語句に登録</button></div>';
       return h;
     }
 
