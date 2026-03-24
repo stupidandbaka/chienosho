@@ -520,6 +520,8 @@ function doDownloadLocal(){
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('ローカルへダウンロードしました（'+ts+'）','success');
+}
+
 async function findNotebookLMDoc(bookFolderId) {
   const q="name='知恵の書_NotebookLM用' and '"+bookFolderId+"' in parents and trashed=false";
   const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)&spaces=drive');
