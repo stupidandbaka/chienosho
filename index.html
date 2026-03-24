@@ -3,20 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>遏･諱ｵ縺ｮ譖ｸ</title>
-<script>
-  // 邁｡譏薙ヱ繧ｹ繝ｯ繝ｼ繝画ｩ溯・・医％縺ｮ繝代せ繝ｯ繝ｼ繝峨ｒ遏･縺｣縺ｦ縺・ｋ莠ｺ縺縺代′髢九￠縺ｾ縺呻ｼ・
-  const APP_PASSWORD = 'chie'; 
-  if(localStorage.getItem('chie_auth') !== APP_PASSWORD) {
-    const p = prompt('繝代せ繝ｯ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞・亥・譛溘ヱ繧ｹ繝ｯ繝ｼ繝・ chie・・');
-    if(p === APP_PASSWORD) {
-      localStorage.setItem('chie_auth', p);
-    } else {
-      document.documentElement.innerHTML = '<body style="background:#0f1117;color:#ff4757;display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;"><h2>繧｢繧ｯ繧ｻ繧ｹ蛻ｶ髯舌＆繧後※縺・∪縺・/h2></body>';
-      throw new Error('Access Denied');
-    }
-  }
-</script>
+<title>知恵の書</title>
+
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -103,9 +91,9 @@ tr:hover{background:rgba(108,99,255,.05)}
 <body>
 <div id="toast-container"></div>
 <div class="header">
-<h1>当 遏･諱ｵ縺ｮ譖ｸ</h1>
-<div class="status-dot" id="headerDot" title="Drive譛ｪ謗･邯・></div>
-<span style="font-size:.75rem;color:var(--text2)" id="headerStatus">譛ｪ謗･邯・/span>
+<h1>📖 知恵の書</h1>
+<div class="status-dot" id="headerDot" title="Drive未接続"></div>
+<span style="font-size:.75rem;color:var(--text2)" id="headerStatus">未接続</span>
 </div>
 <div class="tabs" id="tabBar"></div>
 <div class="main" id="mainContent"></div>
@@ -115,7 +103,7 @@ let knowledgeBase = [];
 let accessToken = null;
 let driveState = {status:'disconnected',appFolderId:null,bookFolderId:null,refFolderId:null,canonicalFileId:null};
 let lastLoadTime = null;
-const TAB_NAMES = ['繝帙・繝','遏･諱ｵ縺ｮ譖ｸ','雉ｪ蝠・,'蜿悶ｊ霎ｼ縺ｿ','險ｭ螳・];
+const TAB_NAMES = ['ホーム','知恵の書','質問','取り込み','設定'];
 let activeTab = 0;
 
 // ===== SETTINGS =====
@@ -135,17 +123,17 @@ function restore(){try{const d=localStorage.getItem('chienosho_data');if(d)knowl
 
 // ===== EXCEL =====
 function buildWorkbookBlob(){
-  const ws_data=[['諠・ｱ','險倩ｼ画律','蜿り・枚迪ｮ']];
+  const ws_data=[['情報','記載日','参考文献']];
   knowledgeBase.forEach(r=>ws_data.push([r.info||'',r.date||'',r.source||'']));
   const ws=XLSX.utils.aoa_to_sheet(ws_data);
   const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'遏･諱ｵ縺ｮ譖ｸ');
+  XLSX.utils.book_append_sheet(wb,ws,'知恵の書');
   const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
   return new Blob([wbout],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
 function parseWorkbook(arrayBuffer){
   const wb=XLSX.read(arrayBuffer,{type:'array'});
-  const ws=wb.Sheets['遏･諱ｵ縺ｮ譖ｸ']||wb.Sheets[wb.SheetNames[0]];
+  const ws=wb.Sheets['知恵の書']||wb.Sheets[wb.SheetNames[0]];
   const rows=XLSX.utils.sheet_to_json(ws,{header:1});
   const result=[];
   for(let i=1;i<rows.length;i++){
@@ -158,12 +146,12 @@ function parseWorkbook(arrayBuffer){
 
 // ===== DRIVE HELPERS =====
 async function driveApiFetch(url,opts={}){
-  if(!accessToken)throw new Error('Drive縺ｫ譛ｪ謗･邯壹〒縺・);
+  if(!accessToken)throw new Error('Driveに未接続です');
   const h=opts.headers||{};
   h['Authorization']='Bearer '+accessToken;
   opts.headers=h;
   const r=await fetch(url,opts);
-  if(!r.ok){const t=await r.text();throw new Error('Drive API 繧ｨ繝ｩ繝ｼ: '+r.status+' '+t)}
+  if(!r.ok){const t=await r.text();throw new Error('Drive API エラー: '+r.status+' '+t)}
   return r;
 }
 
@@ -182,9 +170,9 @@ async function findOrCreateFolder(name,parentId){
 }
 
 async function ensureDriveFolders(){
-  const appFolderId=await findOrCreateFolder('遏･諱ｵ縺ｮ譖ｸapp',null);
-  const bookFolderId=await findOrCreateFolder('遏･諱ｵ縺ｮ譖ｸ',appFolderId);
-  const refFolderId=await findOrCreateFolder('蜿り・嶌',appFolderId);
+  const appFolderId=await findOrCreateFolder('知恵の書app',null);
+  const bookFolderId=await findOrCreateFolder('知恵の書',appFolderId);
+  const refFolderId=await findOrCreateFolder('参考書',appFolderId);
   driveState.appFolderId=appFolderId;
   driveState.bookFolderId=bookFolderId;
   driveState.refFolderId=refFolderId;
@@ -192,11 +180,11 @@ async function ensureDriveFolders(){
 }
 
 async function findCanonicalFile(bookFolderId){
-  const q="name='遏･諱ｵ縺ｮ譖ｸ.xlsx' and '"+bookFolderId+"' in parents and trashed=false";
+  const q="name='知恵の書.xlsx' and '"+bookFolderId+"' in parents and trashed=false";
   const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc&spaces=drive');
   const data=await r.json();
   if(!data.files||data.files.length===0)return null;
-  if(data.files.length>1)toast('隴ｦ蜻・ 蜷悟錐縺ｮ豁｣譛ｬ縺瑚､・焚縺ゅｊ縺ｾ縺吶よ怙譁ｰ繧剃ｽｿ逕ｨ縺励∪縺吶・,'error');
+  if(data.files.length>1)toast('警告: 同名の正本が複数あります。最新を使用します。','error');
   return{fileId:data.files[0].id,modifiedTime:data.files[0].modifiedTime};
 }
 
@@ -210,7 +198,7 @@ async function uploadOrUpdateCanonical(bookFolderId,blob,existingFileId){
     const r=await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files/'+existingFileId+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'},body:blob});
     const d=await r.json();return d.id;
   }else{
-    const meta={name:'遏･諱ｵ縺ｮ譖ｸ.xlsx',parents:[bookFolderId],mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'};
+    const meta={name:'知恵の書.xlsx',parents:[bookFolderId],mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'};
     const form=new FormData();
     form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
     form.append('file',blob);
@@ -229,20 +217,20 @@ async function createBackupFile(bookFolderId,blob,timestampName){
 }
 
 async function loadFromDriveCanonical(){
-  if(!accessToken)throw new Error('Drive縺ｫ譛ｪ謗･邯壹〒縺・);
+  if(!accessToken)throw new Error('Driveに未接続です');
   if(!driveState.bookFolderId)await ensureDriveFolders();
   const f=await findCanonicalFile(driveState.bookFolderId);
-  if(!f){toast('豁｣譛ｬ繝輔ぃ繧､繝ｫ縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ縲よ眠隕丈ｽ懈・縺輔ｌ縺ｾ縺吶・,'info');return}
+  if(!f){toast('正本ファイルが見つかりません。新規作成されます。','info');return}
   driveState.canonicalFileId=f.fileId;
   const ab=await downloadDriveFile(f.fileId);
   knowledgeBase=parseWorkbook(ab);
   persist();
   lastLoadTime=new Date().toLocaleString('ja-JP');
-  toast('Drive縺九ｉ隱ｭ縺ｿ霎ｼ縺ｿ螳御ｺ・ｼ・+knowledgeBase.length+'莉ｶ・・,'success');
+  toast('Driveから読み込み完了（'+knowledgeBase.length+'件）','success');
 }
 
 async function saveToDriveWithBackup(reasonText){
-  if(!accessToken)throw new Error('Drive縺ｫ譛ｪ謗･邯壹〒縺・);
+  if(!accessToken)throw new Error('Driveに未接続です');
   if(!driveState.bookFolderId)await ensureDriveFolders();
   if(!driveState.canonicalFileId){
     const f=await findCanonicalFile(driveState.bookFolderId);
@@ -253,15 +241,15 @@ async function saveToDriveWithBackup(reasonText){
   try{
     canonRes=await uploadOrUpdateCanonical(driveState.bookFolderId,blob,driveState.canonicalFileId);
     driveState.canonicalFileId=canonRes;
-  }catch(e){throw new Error('豁｣譛ｬ縺ｮ菫晏ｭ倥↓螟ｱ謨・ '+e.message)}
+  }catch(e){throw new Error('正本の保存に失敗: '+e.message)}
   const now=new Date();
-  const ts='遏･諱ｵ縺ｮ譖ｸ '+now.getFullYear()+'.'+(now.getMonth()+1)+'.'+now.getDate()+'.'+now.getHours()+'.'+now.getMinutes()+'.'+now.getSeconds()+'.xlsx';
+  const ts='知恵の書 '+now.getFullYear()+'.'+(now.getMonth()+1)+'.'+now.getDate()+'.'+now.getHours()+'.'+now.getMinutes()+'.'+now.getSeconds()+'.xlsx';
   try{await createBackupFile(driveState.bookFolderId,blob,ts)}catch(e){
-    toast('譛ｬ菴謎ｿ晏ｭ俶・蜉・/ 繝舌ャ繧ｯ繧｢繝・・螟ｱ謨・ '+e.message,'error');
+    toast('本体保存成功 / バックアップ失敗: '+e.message,'error');
     renderAll();return;
   }
   persist();
-  toast((reasonText||'菫晏ｭ・)+'螳御ｺ・ｼ域ｭ｣譛ｬ+繝舌ャ繧ｯ繧｢繝・・・・,'success');
+  toast((reasonText||'保存')+'完了（正本+バックアップ）','success');
 }
 
 // ===== SEARCH & ANSWER =====
@@ -271,8 +259,8 @@ function searchKnowledge(query){
   return fuse.search(query).slice(0,10);
 }
 function generateAnswerRuleBased(query,results){
-  if(!results||results.length===0)return{answer:'遏･諱ｵ縺ｮ譖ｸ蜀・↓隧ｲ蠖捺ュ蝣ｱ縺後≠繧翫∪縺帙ｓ縲・n\n霑ｽ蜉繧呈､懆ｨ弱☆縺ｹ縺肴ュ蝣ｱ・喀n繝ｻ縲・+query+'縲阪↓髢｢騾｣縺吶ｋ莠句ｮ溘ｄ螳夂ｾｩ\n繝ｻ髢｢騾｣縺吶ｋ蜿り・枚迪ｮURL',evidence:[]};
-  let answer='縲占ｳｪ蝠上・+query+'\n\n縲仙屓遲斐曾n';
+  if(!results||results.length===0)return{answer:'知恵の書内に該当情報がありません。\n\n追加を検討すべき情報：\n・「'+query+'」に関連する事実や定義\n・関連する参考文献URL',evidence:[]};
+  let answer='【質問】'+query+'\n\n【回答】\n';
   const evidence=[];
   results.forEach((r,i)=>{
     const idx=knowledgeBase.indexOf(r.item);
@@ -293,25 +281,25 @@ async function fileToBase64(file){
 }
 async function callGeminiExtract(mimeType,base64Data){
   const key=getGeminiKey();
-  if(!key)throw new Error('Gemini API Key縺瑚ｨｭ螳壹＆繧後※縺・∪縺帙ｓ');
+  if(!key)throw new Error('Gemini API Keyが設定されていません');
   const model=getGeminiModel();
   const url='https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key;
   const body={
     contents:[{parts:[
       {inlineData:{mimeType:mimeType,data:base64Data}},
-      {text:'縺薙・繝輔ぃ繧､繝ｫ縺ｮ蜀・ｮｹ繧貞・譫舌＠縲・㍾隕√・繧､繝ｳ繝医ｒ蜴ｳ驕ｸ縺励※隕∫ｴ・＠縺ｦ縺上□縺輔＞縲らｮ・擅譖ｸ縺阪・謨ｰ縺悟､壹☆縺弱↑縺・ｈ縺・∝・螳ｹ縺ｮ雉ｪ縺ｯ菫昴▲縺溘∪縺ｾ縲∵歓蜃ｺ縺吶ｋ謨ｰ繧貞ｿ・ｦ∵怙蟆城剞縺ｫ縺ｾ縺ｨ繧√※縺上□縺輔＞縲ゆｻ･荳九・JSON蠖｢蠑上・縺ｿ縺ｧ霑斐＠縺ｦ縺上□縺輔＞縲・SON莉･螟悶・繝・く繧ｹ繝医・荳蛻・性繧√↑縺・〒縺上□縺輔＞縲・n{"extracted_text":"蜀・ｮｹ繧定ｦ∫ｴ・＠縺滓歓蜃ｺ繝・く繧ｹ繝亥・譁・,"bullets":["蜴ｳ驕ｸ繝ｻ隕∫ｴ・＆繧後◆邂・擅譖ｸ縺・","蜴ｳ驕ｸ繝ｻ隕∫ｴ・＆繧後◆邂・擅譖ｸ縺・"],"urls":["謚ｽ蜃ｺ縺励◆URL1"]}'}
+      {text:'このファイルの内容を分析し、重要ポイントを厳選して要約してください。箇条書きの数が多すぎないよう、内容の質は保ったまま、抽出する数を必要最小限にまとめてください。以下のJSON形式のみで返してください。JSON以外のテキストは一切含めないでください。\n{"extracted_text":"内容を要約した抽出テキスト全文","bullets":["厳選・要約された箇条書き1","厳選・要約された箇条書き2"],"urls":["抽出したURL1"]}'}
     ]}],
     generationConfig:{responseMimeType:'application/json'}
   };
   const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-  if(!r.ok){const t=await r.text();throw new Error('Gemini API 繧ｨ繝ｩ繝ｼ: '+r.status+' '+t)}
+  if(!r.ok){const t=await r.text();throw new Error('Gemini API エラー: '+r.status+' '+t)}
   const data=await r.json();
   const text=data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if(!text)throw new Error('Gemini縺九ｉ縺ｮ蠢懃ｭ斐′遨ｺ縺ｧ縺・);
+  if(!text)throw new Error('Geminiからの応答が空です');
   try{return JSON.parse(text)}catch(e){
     const m=text.match(/\{[\s\S]*\}/);
     if(m)try{return JSON.parse(m[0])}catch(e2){}
-    throw new Error('Gemini縺ｮ霑皮ｭ斐′荳肴ｭ｣縺ｪJSON縺ｧ縺・ '+text.substring(0,200));
+    throw new Error('Geminiの返答が不正なJSONです: '+text.substring(0,200));
   }
 }
 
@@ -357,19 +345,19 @@ function findSimilar(text){
 // ===== GOOGLE AUTH =====
 function connectDrive(){
   const clientId=getClientId();
-  if(!clientId){toast('險ｭ螳壹〒Google Client ID繧貞・蜉帙＠縺ｦ縺上□縺輔＞','error');return}
+  if(!clientId){toast('設定でGoogle Client IDを入力してください','error');return}
   driveState.status='connecting';
   renderAll();
   const tClient=google.accounts.oauth2.initTokenClient({
     client_id:clientId,
     scope:'https://www.googleapis.com/auth/drive.file',
     callback:(resp)=>{
-      if(resp.error){driveState.status='error';toast('隱崎ｨｼ繧ｨ繝ｩ繝ｼ: '+resp.error,'error');renderAll();return}
+      if(resp.error){driveState.status='error';toast('認証エラー: '+resp.error,'error');renderAll();return}
       accessToken=resp.access_token;
       driveState.status='connected';
       document.getElementById('headerDot').classList.add('connected');
-      document.getElementById('headerStatus').textContent='謗･邯壽ｸ医∩';
-      toast('Google Drive縺ｫ謗･邯壹＠縺ｾ縺励◆','success');
+      document.getElementById('headerStatus').textContent='接続済み';
+      toast('Google Driveに接続しました','success');
       renderAll();
     }
   });
@@ -392,7 +380,7 @@ function renderPanel(){
 }
 
 function makeUrlsClickable(src){
-  if(!src)return'<span style="color:var(--text2)">窶・/span>';
+  if(!src)return'<span style="color:var(--text2)">—</span>';
   return src.split('\n').filter(u=>u.trim()).map(u=>{
     if(u.match(/^https?:\/\//))return'<a href="'+u.trim()+'" target="_blank" class="url-link">'+u.trim()+'</a>';
     return u;
@@ -401,34 +389,34 @@ function makeUrlsClickable(src){
 
 function renderHome(){
   const isConn=driveState.status==='connected';
-  return '<div class="card"><h2>当 遏･諱ｵ縺ｮ譖ｸ縺ｸ繧医≧縺薙◎</h2><p style="color:var(--text2);margin-bottom:16px">遏･諱ｵ縺ｮ譖ｸ縺ｯ縲√≠縺ｪ縺溘・遏･隴倥ｒExcel繝輔ぃ繧､繝ｫ縺ｨ縺励※Google Drive縺ｫ菫晏ｭ倥・邂｡逅・☆繧九い繝励Μ縺ｧ縺吶ゅヵ繧｡繧､繝ｫ繧ФRL縺九ｉ遏･隴倥ｒ蜿悶ｊ霎ｼ縺ｿ縲√＞縺､縺ｧ繧りｳｪ蝠上〒讀懃ｴ｢縺ｧ縺阪∪縺吶・/p>'
-    +'<div class="stat-grid"><div class="stat-card"><div class="val">'+knowledgeBase.length+'</div><div class="lbl">逋ｻ骭ｲ繝・・繧ｿ謨ｰ</div></div>'
-    +'<div class="stat-card"><div class="val">'+(lastLoadTime||'窶・)+'</div><div class="lbl">譛邨りｪｭ霎ｼ</div></div>'
-    +'<div class="stat-card"><div class="val"><span class="badge '+(isConn?'badge-success':'badge-danger')+'">'+(isConn?'謗･邯壽ｸ医∩':'譛ｪ謗･邯・)+'</span></div><div class="lbl">Drive迥ｶ諷・/div></div></div></div>'
-    +'<div class="card"><h3>蛻晄悄繧ｻ繝・ヨ繧｢繝・・</h3>'
-    +'<button class="btn btn-primary" onclick="doInit()" '+(isConn?'':'disabled')+'>Drive縺ｫ謗･邯壹＠縺ｦ蛻晄悄蛹厄ｼ医ヵ繧ｩ繝ｫ繝菴懈・・区ｭ｣譛ｬ遒ｺ隱搾ｼ・/button>'
-    +(!isConn?' <span style="font-size:.8rem;color:var(--text2)">窶ｻ蜈医↓險ｭ螳壹ち繝悶〒Drive縺ｫ謗･邯壹＠縺ｦ縺上□縺輔＞</span>':'')
+  return '<div class="card"><h2>📖 知恵の書へようこそ</h2><p style="color:var(--text2);margin-bottom:16px">知恵の書は、あなたの知識をExcelファイルとしてGoogle Driveに保存・管理するアプリです。ファイルやURLから知識を取り込み、いつでも質問で検索できます。</p>'
+    +'<div class="stat-grid"><div class="stat-card"><div class="val">'+knowledgeBase.length+'</div><div class="lbl">登録データ数</div></div>'
+    +'<div class="stat-card"><div class="val">'+(lastLoadTime||'—')+'</div><div class="lbl">最終読込</div></div>'
+    +'<div class="stat-card"><div class="val"><span class="badge '+(isConn?'badge-success':'badge-danger')+'">'+(isConn?'接続済み':'未接続')+'</span></div><div class="lbl">Drive状態</div></div></div></div>'
+    +'<div class="card"><h3>初期セットアップ</h3>'
+    +'<button class="btn btn-primary" onclick="doInit()" '+(isConn?'':'disabled')+'>Driveに接続して初期化（フォルダ作成＋正本確認）</button>'
+    +(!isConn?' <span style="font-size:.8rem;color:var(--text2)">※先に設定タブでDriveに接続してください</span>':'')
     +'<div id="initResult" style="margin-top:12px"></div></div>';
 }
 
 function renderBook(){
   const isConn=driveState.status==='connected';
-  let html='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px"><h2>答 遏･諱ｵ縺ｮ譖ｸ</h2><div style="display:flex;gap:8px">'
-    +'<button class="btn btn-sm btn-success" onclick="doAddRow()">・・陦瑚ｿｽ蜉</button>'
-    +'<button class="btn btn-sm btn-outline" onclick="doDownloadLocal()">繝ｭ繝ｼ繧ｫ繝ｫ縺ｸ菫晏ｭ・/button>'
-    +'<button class="btn btn-sm btn-primary" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Drive縺ｸ菫晏ｭ・/button></div></div>'
-    +'<div class="input-group"><input type="text" id="bookSearch" placeholder="讀懃ｴ｢..." oninput="renderAll()"></div>';
+  let html='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px"><h2>📚 知恵の書</h2><div style="display:flex;gap:8px">'
+    +'<button class="btn btn-sm btn-success" onclick="doAddRow()">＋ 行追加</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="doDownloadLocal()">ローカルへ保存</button>'
+    +'<button class="btn btn-sm btn-primary" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Driveへ保存</button></div></div>'
+    +'<div class="input-group"><input type="text" id="bookSearch" placeholder="検索..." oninput="renderAll()"></div>';
   const q=document.getElementById('bookSearch')?.value||'';
   let filtered=knowledgeBase.map((r,i)=>({...r,_i:i}));
   if(q){const fuse=new Fuse(filtered,{keys:['info','source'],threshold:0.4});filtered=fuse.search(q).map(r=>r.item)}
-  html+='<div class="table-wrap"><table><thead><tr><th style="width:40px">#</th><th>諠・ｱ</th><th style="width:100px">險倩ｼ画律</th><th style="width:180px">蜿り・枚迪ｮ</th><th style="width:80px">謫堺ｽ・/th></tr></thead><tbody>';
-  if(filtered.length===0)html+='<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">繝・・繧ｿ縺後≠繧翫∪縺帙ｓ</td></tr>';
+  html+='<div class="table-wrap"><table><thead><tr><th style="width:40px">#</th><th>情報</th><th style="width:100px">記載日</th><th style="width:180px">参考文献</th><th style="width:80px">操作</th></tr></thead><tbody>';
+  if(filtered.length===0)html+='<tr><td colspan="5" style="text-align:center;color:var(--text2);padding:20px">データがありません</td></tr>';
   else filtered.forEach(r=>{
     html+='<tr><td>'+(r._i+1)+'</td>'
       +'<td contenteditable="true" onblur="updateRow('+r._i+',\'info\',this.textContent)">'+escHtml(r.info)+'</td>'
       +'<td contenteditable="true" onblur="updateRow('+r._i+',\'date\',this.textContent)">'+escHtml(r.date)+'</td>'
-      +'<td>'+makeUrlsClickable(r.source)+'<br><input type="text" style="font-size:.75rem;margin-top:4px" value="'+escAttr(r.source)+'" onchange="updateRow('+r._i+',\'source\',this.value)" placeholder="URL・域隼陦・隍・焚・・></td>'
-      +'<td><button class="btn btn-sm btn-danger" onclick="if(confirm(\'蜑企勁縺励∪縺吶°・歃')){deleteRow('+r._i+');renderAll()}">蜑企勁</button></td></tr>';
+      +'<td>'+makeUrlsClickable(r.source)+'<br><input type="text" style="font-size:.75rem;margin-top:4px" value="'+escAttr(r.source)+'" onchange="updateRow('+r._i+',\'source\',this.value)" placeholder="URL（改行=複数）"></td>'
+      +'<td><button class="btn btn-sm btn-danger" onclick="if(confirm(\'削除しますか？\')){deleteRow('+r._i+');renderAll()}">削除</button></td></tr>';
   });
   html+='</tbody></table></div></div>';
   return html;
@@ -436,10 +424,10 @@ function renderBook(){
 
 function renderAsk(){
   const isConn=driveState.status==='connected';
-  return '<div class="card"><h2>笶・雉ｪ蝠・/h2>'
-    +'<div class="input-group"><label>雉ｪ蝠丞・螳ｹ</label><input type="text" id="askInput" placeholder="遏･諱ｵ縺ｮ譖ｸ縺ｫ雉ｪ蝠上☆繧・.."></div>'
-    +'<label class="toggle" style="margin-bottom:12px"><input type="checkbox" id="refreshToggle" '+(getRefreshBeforeAsk()?'checked':'')+' onchange="setSetting(\'refresh_before_ask\',this.checked?\'on\':\'off\')"><span class="slider"></span>雉ｪ蝠丞燕縺ｫDrive縺九ｉ譛譁ｰ繧貞叙蠕・/label>'
-    +'<button class="btn btn-primary" onclick="doAsk()" id="askBtn">讀懃ｴ｢縺励※蝗樒ｭ・/button>'
+  return '<div class="card"><h2>❓ 質問</h2>'
+    +'<div class="input-group"><label>質問内容</label><input type="text" id="askInput" placeholder="知恵の書に質問する..."></div>'
+    +'<label class="toggle" style="margin-bottom:12px"><input type="checkbox" id="refreshToggle" '+(getRefreshBeforeAsk()?'checked':'')+' onchange="setSetting(\'refresh_before_ask\',this.checked?\'on\':\'off\')"><span class="slider"></span>質問前にDriveから最新を取得</label>'
+    +'<button class="btn btn-primary" onclick="doAsk()" id="askBtn">検索して回答</button>'
     +'<div id="askResult" style="margin-top:16px"></div></div>';
 }
 
@@ -449,33 +437,33 @@ function renderImport(){
   const online=navigator.onLine;
   const canGemini=hasKey&&online;
   let disableReason='';
-  if(!hasKey)disableReason='Gemini API Key縺梧悴險ｭ螳壹〒縺吶りｨｭ螳壹ち繝悶〒蜈･蜉帙＠縺ｦ縺上□縺輔＞縲・;
-  else if(!online)disableReason='繧ｪ繝輔Λ繧､繝ｳ縺ｮ縺溘ａGemini讖溯・縺ｯ菴ｿ逕ｨ縺ｧ縺阪∪縺帙ｓ縲・;
-  return '<div class="card"><h2>踏 繝輔ぃ繧､繝ｫ蜿悶ｊ霎ｼ縺ｿ</h2>'
-    +'<div class="input-group"><label>繝輔ぃ繧､繝ｫ繧帝∈謚橸ｼ・DF/DOCX/PPTX/TXT/MD/PNG/JPG・・/label><input type="file" id="importFile" accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg" style="padding:8px"></div>'
+  if(!hasKey)disableReason='Gemini API Keyが未設定です。設定タブで入力してください。';
+  else if(!online)disableReason='オフラインのためGemini機能は使用できません。';
+  return '<div class="card"><h2>📥 ファイル取り込み</h2>'
+    +'<div class="input-group"><label>ファイルを選択（PDF/DOCX/PPTX/TXT/MD/PNG/JPG）</label><input type="file" id="importFile" accept=".pdf,.docx,.pptx,.txt,.md,.png,.jpg,.jpeg" style="padding:8px"></div>'
     +(disableReason?'<div class="alert alert-warn">'+disableReason+'</div>':'')
-    +'<button class="btn btn-primary" onclick="doGeminiExtract()" '+(canGemini?'':'disabled')+'>Gemini縺ｧ隱ｭ縺ｿ蜿悶ｊ・域歓蜃ｺ・狗ｮ・擅譖ｸ縺搾ｼ・/button>'
+    +'<button class="btn btn-primary" onclick="doGeminiExtract()" '+(canGemini?'':'disabled')+'>Geminiで読み取り（抽出＋箇条書き）</button>'
     +'<div id="importResult" style="margin-top:16px"></div></div>';
 }
 
 function renderSettings(){
   const st=driveState.status;
-  const stLabel={disconnected:'譛ｪ謗･邯・,connecting:'謗･邯壻ｸｭ...',connected:'謗･邯壽ｸ医∩',error:'繧ｨ繝ｩ繝ｼ'}[st]||st;
+  const stLabel={disconnected:'未接続',connecting:'接続中...',connected:'接続済み',error:'エラー'}[st]||st;
   const stClass={disconnected:'badge-danger',connecting:'badge-warn',connected:'badge-success',error:'badge-danger'}[st]||'badge-danger';
   const isConn=st==='connected';
   const savedKey=getSetting('gemini_key_saved')==='true';
-  return '<div class="card"><h2>笞呻ｸ・Google Drive險ｭ螳・/h2>'
+  return '<div class="card"><h2>⚙️ Google Drive設定</h2>'
     +'<div class="input-group"><label>Google Client ID</label><input type="text" id="clientIdInput" value="'+escAttr(getClientId())+'" placeholder="xxxx.apps.googleusercontent.com" onchange="setSetting(\'client_id\',this.value)"></div>'
-    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><button class="btn btn-primary" onclick="connectDrive()">Drive縺ｫ謗･邯・/button><span class="badge '+stClass+'">'+stLabel+'</span></div>'
-    +(isConn?'<div class="alert alert-info">繝輔か繝ｫ繝ID: app='+escHtml(driveState.appFolderId||'窶・)+' / book='+escHtml(driveState.bookFolderId||'窶・)+' / ref='+escHtml(driveState.refFolderId||'窶・)+'</div>':'')
-    +'<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-outline" onclick="doLoadDrive()" '+(isConn?'':'disabled')+'>Drive縺九ｉ隱ｭ縺ｿ霎ｼ縺ｿ</button><button class="btn btn-outline" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Drive縺ｸ菫晏ｭ・/button></div>'
-    +'<div class="alert '+(navigator.onLine?'alert-success':'alert-warn')+'">繧ｪ繝ｳ繝ｩ繧､繝ｳ迥ｶ諷・ '+(navigator.onLine?'繧ｪ繝ｳ繝ｩ繧､繝ｳ':'繧ｪ繝輔Λ繧､繝ｳ')+'</div></div>'
-    +'<div class="card"><h2>､・Gemini API險ｭ螳・/h2>'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><button class="btn btn-primary" onclick="connectDrive()">Driveに接続</button><span class="badge '+stClass+'">'+stLabel+'</span></div>'
+    +(isConn?'<div class="alert alert-info">フォルダID: app='+escHtml(driveState.appFolderId||'—')+' / book='+escHtml(driveState.bookFolderId||'—')+' / ref='+escHtml(driveState.refFolderId||'—')+'</div>':'')
+    +'<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn btn-outline" onclick="doLoadDrive()" '+(isConn?'':'disabled')+'>Driveから読み込み</button><button class="btn btn-outline" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Driveへ保存</button></div>'
+    +'<div class="alert '+(navigator.onLine?'alert-success':'alert-warn')+'">オンライン状態: '+(navigator.onLine?'オンライン':'オフライン')+'</div></div>'
+    +'<div class="card"><h2>🤖 Gemini API設定</h2>'
     +'<div class="input-group"><label>Gemini API Key</label><input type="password" id="geminiKeyInput" value="'+escAttr(getGeminiKey())+'" placeholder="AIza..." onchange="setSetting(\'gemini_key\',this.value)"></div>'
-    +'<label class="toggle" style="margin-bottom:8px"><input type="checkbox" id="saveKeyCheck" '+(savedKey?'checked':'')+' onchange="onSaveKeyToggle(this.checked)"><span class="slider"></span>縺薙・遶ｯ譛ｫ縺ｫ菫晏ｭ假ｼ郁・蟾ｱ雋ｬ莉ｻ・・/label>'
-    +'<div class="alert alert-danger" style="font-size:.78rem">笞・・API繧ｭ繝ｼ繧偵ヶ繝ｩ繧ｦ繧ｶ縺ｫ菫晏ｭ倥☆繧九→縲√％縺ｮ遶ｯ譛ｫ縺ｫ繧｢繧ｯ繧ｻ繧ｹ縺ｧ縺阪ｋ莠ｺ縺ｯ隱ｰ縺ｧ繧ゅく繝ｼ繧帝夢隕ｧ縺ｧ縺阪∪縺吶ょ・譛臥ｫｯ譛ｫ縺ｧ縺ｯ菫晏ｭ倥＠縺ｪ縺・〒縺上□縺輔＞縲よ囓蜿ｷ蛹悶・陦後ｏ繧後∪縺帙ｓ縲・/div>'
-    +'<div class="input-group"><label>Gemini繝｢繝・Ν蜷・/label><input type="text" id="geminiModelInput" value="'+escAttr(getGeminiModel())+'" placeholder="gemini-2.0-flash" onchange="setSetting(\'gemini_model\',this.value)"></div>'
-    +'<button class="btn btn-outline" onclick="doGeminiTest()">Gemini謗･邯壹ユ繧ｹ繝・/button>'
+    +'<label class="toggle" style="margin-bottom:8px"><input type="checkbox" id="saveKeyCheck" '+(savedKey?'checked':'')+' onchange="onSaveKeyToggle(this.checked)"><span class="slider"></span>この端末に保存（自己責任）</label>'
+    +'<div class="alert alert-danger" style="font-size:.78rem">⚠️ APIキーをブラウザに保存すると、この端末にアクセスできる人は誰でもキーを閲覧できます。共有端末では保存しないでください。暗号化は行われません。</div>'
+    +'<div class="input-group"><label>Geminiモデル名</label><input type="text" id="geminiModelInput" value="'+escAttr(getGeminiModel())+'" placeholder="gemini-2.0-flash" onchange="setSetting(\'gemini_model\',this.value)"></div>'
+    +'<button class="btn btn-outline" onclick="doGeminiTest()">Gemini接続テスト</button>'
     +'<div id="geminiTestResult" style="margin-top:8px"></div></div>';
 }
 
@@ -492,16 +480,16 @@ function bindEvents(){}
 async function doInit(){
   const el=document.getElementById('initResult');
   if(!el)return;
-  el.innerHTML='<div class="loading"></div> 蛻晄悄蛹紋ｸｭ...';
+  el.innerHTML='<div class="loading"></div> 初期化中...';
   try{
     await ensureDriveFolders();
     const f=await findCanonicalFile(driveState.bookFolderId);
     if(f){driveState.canonicalFileId=f.fileId;const ab=await downloadDriveFile(f.fileId);knowledgeBase=parseWorkbook(ab);persist();lastLoadTime=new Date().toLocaleString('ja-JP');
-      el.innerHTML='<div class="alert alert-success">蛻晄悄蛹門ｮ御ｺ・よｭ｣譛ｬ繧定ｪｭ縺ｿ霎ｼ縺ｿ縺ｾ縺励◆・・+knowledgeBase.length+'莉ｶ・・/div>';}
-    else{el.innerHTML='<div class="alert alert-info">繝輔か繝ｫ繝繧剃ｽ懈・縺励∪縺励◆縲よｭ｣譛ｬ繝輔ぃ繧､繝ｫ縺ｯ縺ｾ縺縺ゅｊ縺ｾ縺帙ｓ縲ら衍諱ｵ縺ｮ譖ｸ繧ｿ繝悶〒繝・・繧ｿ繧定ｿｽ蜉縺励※菫晏ｭ倥＠縺ｦ縺上□縺輔＞縲・/div>';}
-    toast('蛻晄悄蛹門ｮ御ｺ・,'success');
+      el.innerHTML='<div class="alert alert-success">初期化完了。正本を読み込みました（'+knowledgeBase.length+'件）</div>';}
+    else{el.innerHTML='<div class="alert alert-info">フォルダを作成しました。正本ファイルはまだありません。知恵の書タブでデータを追加して保存してください。</div>';}
+    toast('初期化完了','success');
     renderAll();
-  }catch(e){el.innerHTML='<div class="alert alert-danger">蛻晄悄蛹門､ｱ謨・ '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doInit()" style="margin-top:8px">蜀崎ｩｦ陦・/button></div>'}
+  }catch(e){el.innerHTML='<div class="alert alert-danger">初期化失敗: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doInit()" style="margin-top:8px">再試行</button></div>'}
 }
 
 function doAddRow(){
@@ -510,18 +498,18 @@ function doAddRow(){
 }
 
 async function doSaveDrive(){
-  try{await saveToDriveWithBackup('遏･諱ｵ縺ｮ譖ｸ菫晏ｭ・);renderAll()}catch(e){toast('菫晏ｭ伜､ｱ謨・ '+e.message,'error')}
+  try{await saveToDriveWithBackup('知恵の書保存');renderAll()}catch(e){toast('保存失敗: '+e.message,'error')}
 }
 
 async function doLoadDrive(){
-  try{await loadFromDriveCanonical();renderAll()}catch(e){toast('隱ｭ縺ｿ霎ｼ縺ｿ螟ｱ謨・ '+e.message,'error')}
+  try{await loadFromDriveCanonical();renderAll()}catch(e){toast('読み込み失敗: '+e.message,'error')}
 }
 
 function doDownloadLocal(){
   const blob=buildWorkbookBlob();
   const now=new Date();
   const pad=n=>('0'+n).slice(-2);
-  const ts='遏･諱ｵ縺ｮ譖ｸ_'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'_'+pad(now.getHours())+pad(now.getMinutes())+pad(now.getSeconds())+'.xlsx';
+  const ts='知恵の書_'+now.getFullYear()+pad(now.getMonth()+1)+pad(now.getDate())+'_'+pad(now.getHours())+pad(now.getMinutes())+pad(now.getSeconds())+'.xlsx';
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;
@@ -530,7 +518,7 @@ function doDownloadLocal(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  toast('繝ｭ繝ｼ繧ｫ繝ｫ縺ｸ繝繧ｦ繝ｳ繝ｭ繝ｼ繝峨＠縺ｾ縺励◆・・+ts+'・・,'success');
+  toast('ローカルへダウンロードしました（'+ts+'）','success');
 }
 
 async function doAsk(){
@@ -538,17 +526,17 @@ async function doAsk(){
   const el=document.getElementById('askResult');
   if(!input||!el)return;
   const q=input.value.trim();
-  if(!q){toast('雉ｪ蝠上ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞','error');return}
-  el.innerHTML='<div class="loading"></div> 讀懃ｴ｢荳ｭ...';
+  if(!q){toast('質問を入力してください','error');return}
+  el.innerHTML='<div class="loading"></div> 検索中...';
   try{
     if(getRefreshBeforeAsk()&&accessToken){
-      try{await loadFromDriveCanonical()}catch(e){el.innerHTML+='<br><span class="alert alert-warn" style="display:inline-block;margin-top:4px">Drive譛譁ｰ蜿門ｾ励↓螟ｱ謨暦ｼ医Ο繝ｼ繧ｫ繝ｫ繧ｭ繝｣繝・す繝･縺ｧ蝗樒ｭ斐＠縺ｾ縺呻ｼ・ '+escHtml(e.message)+'</span>'}
+      try{await loadFromDriveCanonical()}catch(e){el.innerHTML+='<br><span class="alert alert-warn" style="display:inline-block;margin-top:4px">Drive最新取得に失敗（ローカルキャッシュで回答します）: '+escHtml(e.message)+'</span>'}
     }
     const results=searchKnowledge(q);
     const{answer,evidence}=generateAnswerRuleBased(q,results);
-    let html='<div class="card" style="margin-top:0"><h3>蝗樒ｭ・/h3><pre style="white-space:pre-wrap;font-family:inherit;color:var(--text)">'+escHtml(answer)+'</pre>';
+    let html='<div class="card" style="margin-top:0"><h3>回答</h3><pre style="white-space:pre-wrap;font-family:inherit;color:var(--text)">'+escHtml(answer)+'</pre>';
     if(evidence.length>0){
-      html+='<h3 style="margin-top:12px">譬ｹ諡</h3><div class="table-wrap"><table><thead><tr><th>陦・</th><th>諠・ｱ</th><th>險倩ｼ画律</th><th>蜿り・枚迪ｮ</th></tr></thead><tbody>';
+      html+='<h3 style="margin-top:12px">根拠</h3><div class="table-wrap"><table><thead><tr><th>行#</th><th>情報</th><th>記載日</th><th>参考文献</th></tr></thead><tbody>';
       evidence.forEach(e=>{
         html+='<tr><td>'+e.row+'</td><td>'+escHtml(e.info)+'</td><td>'+escHtml(e.date)+'</td><td>'+makeUrlsClickable(e.source)+'</td></tr>';
       });
@@ -556,7 +544,7 @@ async function doAsk(){
     }
     html+='</div>';
     el.innerHTML=html;
-  }catch(e){el.innerHTML='<div class="alert alert-danger">繧ｨ繝ｩ繝ｼ: '+escHtml(e.message)+'</div>'}
+  }catch(e){el.innerHTML='<div class="alert alert-danger">エラー: '+escHtml(e.message)+'</div>'}
 }
 
 // ===== IMPORT =====
@@ -566,9 +554,9 @@ async function doGeminiExtract(){
   const fileInput=document.getElementById('importFile');
   const el=document.getElementById('importResult');
   if(!fileInput||!el)return;
-  if(!fileInput.files||fileInput.files.length===0){toast('繝輔ぃ繧､繝ｫ繧帝∈謚槭＠縺ｦ縺上□縺輔＞','error');return}
+  if(!fileInput.files||fileInput.files.length===0){toast('ファイルを選択してください','error');return}
   const file=fileInput.files[0];
-  el.innerHTML='<div class="loading"></div> Gemini縺ｧ隗｣譫蝉ｸｭ... (繝輔ぃ繧､繝ｫ繧ｵ繧､繧ｺ: '+(file.size/1024).toFixed(1)+'KB)';
+  el.innerHTML='<div class="loading"></div> Geminiで解析中... (ファイルサイズ: '+(file.size/1024).toFixed(1)+'KB)';
   try{
     const{mimeType,base64}=await fileToBase64(file);
     const result=await callGeminiExtract(mimeType,base64);
@@ -578,29 +566,29 @@ async function doGeminiExtract(){
     if(!importState.extracted_text)importState.extracted_text='';
     renderImportResult(el);
   }catch(e){
-    el.innerHTML='<div class="alert alert-danger">Gemini隱ｭ縺ｿ蜿悶ｊ繧ｨ繝ｩ繝ｼ: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doGeminiExtract()" style="margin-top:8px">蜀崎ｩｦ陦・/button></div>';
+    el.innerHTML='<div class="alert alert-danger">Gemini読み取りエラー: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doGeminiExtract()" style="margin-top:8px">再試行</button></div>';
   }
 }
 
 function renderImportResult(el){
-  let html='<div class="card" style="margin-top:0"><h3>謚ｽ蜃ｺ繝・く繧ｹ繝・/h3><textarea id="extractedText" rows="5" style="margin-bottom:12px">'+escHtml(importState.extracted_text)+'</textarea>';
-  html+='<h3>邂・擅譖ｸ縺搾ｼ育ｷｨ髮・庄閭ｽ・・/h3><div id="bulletsList">';
+  let html='<div class="card" style="margin-top:0"><h3>抽出テキスト</h3><textarea id="extractedText" rows="5" style="margin-bottom:12px">'+escHtml(importState.extracted_text)+'</textarea>';
+  html+='<h3>箇条書き（編集可能）</h3><div id="bulletsList">';
   importState.bullets.forEach((b,i)=>{
-    html+='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="'+escAttr(b)+'" onchange="importState.bullets['+i+']=this.value" style="flex:1"><button class="btn btn-sm btn-danger" onclick="importState.bullets.splice('+i+',1);renderImportResult(document.getElementById(\'importResult\'))">笨・/button></div>';
+    html+='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="'+escAttr(b)+'" onchange="importState.bullets['+i+']=this.value" style="flex:1"><button class="btn btn-sm btn-danger" onclick="importState.bullets.splice('+i+',1);renderImportResult(document.getElementById(\'importResult\'))">✕</button></div>';
   });
-  html+='<button class="btn btn-sm btn-outline" onclick="importState.bullets.push(\'\');renderImportResult(document.getElementById(\'importResult\'))">・・邂・擅譖ｸ縺崎ｿｽ蜉</button></div>';
-  html+='<h3 style="margin-top:12px">URL・育ｷｨ髮・庄閭ｽ・・/h3><div id="urlsList">';
+  html+='<button class="btn btn-sm btn-outline" onclick="importState.bullets.push(\'\');renderImportResult(document.getElementById(\'importResult\'))">＋ 箇条書き追加</button></div>';
+  html+='<h3 style="margin-top:12px">URL（編集可能）</h3><div id="urlsList">';
   importState.urls.forEach((u,i)=>{
-    html+='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="'+escAttr(u)+'" onchange="importState.urls['+i+']=this.value" style="flex:1"><button class="btn btn-sm btn-danger" onclick="importState.urls.splice('+i+',1);renderImportResult(document.getElementById(\'importResult\'))">笨・/button></div>';
+    html+='<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center"><input type="text" value="'+escAttr(u)+'" onchange="importState.urls['+i+']=this.value" style="flex:1"><button class="btn btn-sm btn-danger" onclick="importState.urls.splice('+i+',1);renderImportResult(document.getElementById(\'importResult\'))">✕</button></div>';
   });
-  html+='<button class="btn btn-sm btn-outline" onclick="importState.urls.push(\'\');renderImportResult(document.getElementById(\'importResult\'))">・・URL霑ｽ蜉</button>';
-  html+='<div style="margin-top:16px"><button class="btn btn-success" onclick="doAppendBullets()">遏･諱ｵ縺ｮ譖ｸ縺ｫ霑ｽ險・/button></div></div></div>';
+  html+='<button class="btn btn-sm btn-outline" onclick="importState.urls.push(\'\');renderImportResult(document.getElementById(\'importResult\'))">＋ URL追加</button>';
+  html+='<div style="margin-top:16px"><button class="btn btn-success" onclick="doAppendBullets()">知恵の書に追記</button></div></div></div>';
   el.innerHTML=html;
 }
 
 async function doAppendBullets(){
   const bullets=importState.bullets.filter(b=>b.trim());
-  if(bullets.length===0){toast('霑ｽ險倥☆繧狗ｮ・擅譖ｸ縺阪′縺ゅｊ縺ｾ縺帙ｓ','error');return}
+  if(bullets.length===0){toast('追記する箇条書きがありません','error');return}
   // Check similarity
   const conflicts=[];
   bullets.forEach((b,i)=>{
@@ -612,8 +600,8 @@ async function doAppendBullets(){
     return;
   }
   appendKnowledgeFromBullets(bullets,new Date().toLocaleDateString('ja-JP'),importState.urls);
-  toast(bullets.length+'莉ｶ繧定ｿｽ險倥＠縺ｾ縺励◆','success');
-  if(accessToken){try{await saveToDriveWithBackup('蜿悶ｊ霎ｼ縺ｿ霑ｽ險・)}catch(e){toast('Drive菫晏ｭ伜､ｱ謨・ '+e.message,'error')}}
+  toast(bullets.length+'件を追記しました','success');
+  if(accessToken){try{await saveToDriveWithBackup('取り込み追記')}catch(e){toast('Drive保存失敗: '+e.message,'error')}}
   importState={extracted_text:'',bullets:[],urls:[]};
   renderAll();
 }
@@ -621,32 +609,32 @@ async function doAppendBullets(){
 async function showSimilarityUI(conflicts){
   const el=document.getElementById('importResult');
   if(!el)return;
-  let html='<div class="card" style="margin-top:12px"><h3>鬘樔ｼｼ繝√ぉ繝・け邨先棡</h3>';
+  let html='<div class="card" style="margin-top:12px"><h3>類似チェック結果</h3>';
   conflicts.forEach((c,ci)=>{
     const sim=c.similar[0];
-    const level=sim.similarity>0.6?'鬮・:sim.similarity>0.35?'荳ｭ':'菴・;
+    const level=sim.similarity>0.6?'高':sim.similarity>0.35?'中':'低';
     html+='<div style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">';
-    html+='<div class="badge '+(level==='鬮・?'badge-danger':level==='荳ｭ'?'badge-warn':'badge-success')+'">鬘樔ｼｼ蠎ｦ: '+level+' ('+Math.round(sim.similarity*100)+'%)</div>';
-    if(level==='鬮・){
+    html+='<div class="badge '+(level==='高'?'badge-danger':level==='中'?'badge-warn':'badge-success')+'">類似度: '+level+' ('+Math.round(sim.similarity*100)+'%)</div>';
+    if(level==='高'){
       const merged=c.bullet.length>sim.item.info.length?c.bullet:sim.item.info;
       const mergedSrc=[sim.item.source,...importState.urls].filter(Boolean).join('\n');
-      html+='<p style="color:var(--text2);font-size:.85rem;margin:8px 0">邨ｱ蜷域｡茨ｼ磯㍾隍・ｒ1陦後↓邨ｱ蜷医＠蜿り・枚迪ｮ繧偵・繝ｼ繧ｸ・・</p>';
+      html+='<p style="color:var(--text2);font-size:.85rem;margin:8px 0">統合案（重複を1行に統合し参考文献をマージ）:</p>';
       html+='<textarea id="merge_'+ci+'" rows="2" style="margin-bottom:8px">'+escHtml(merged)+'</textarea>';
-      html+='<button class="btn btn-sm btn-primary" onclick="doMergeSim('+ci+','+sim.index+')">邨ｱ蜷医＠縺ｦ譖ｴ譁ｰ</button> ';
-      html+='<button class="btn btn-sm btn-outline" onclick="doSkipSim('+ci+')">繧ｹ繧ｭ繝・・・域眠隕剰ｿｽ蜉・・/button>';
-    }else if(level==='荳ｭ'){
-      html+='<div class="compare-ui"><div class="compare-side"><h4>譌｢蟄假ｼ郁｡・+(sim.index+1)+'・・/h4><p>'+escHtml(sim.item.info)+'</p></div>';
-      html+='<div class="compare-side"><h4>譁ｰ隕・/h4><p>'+escHtml(c.bullet)+'</p></div></div>';
-      html+='<textarea id="merge_'+ci+'" rows="2" placeholder="譛邨ゅユ繧ｭ繧ｹ繝医ｒ蜈･蜉・.." style="margin-bottom:8px">'+escHtml(c.bullet)+'</textarea>';
-      html+='<button class="btn btn-sm btn-primary" onclick="doMergeSim('+ci+','+sim.index+')">縺薙・蜀・ｮｹ縺ｧ譌｢蟄倥ｒ譖ｴ譁ｰ</button> ';
-      html+='<button class="btn btn-sm btn-outline" onclick="doSkipSim('+ci+')">譁ｰ隕剰ｿｽ蜉</button>';
+      html+='<button class="btn btn-sm btn-primary" onclick="doMergeSim('+ci+','+sim.index+')">統合して更新</button> ';
+      html+='<button class="btn btn-sm btn-outline" onclick="doSkipSim('+ci+')">スキップ（新規追加）</button>';
+    }else if(level==='中'){
+      html+='<div class="compare-ui"><div class="compare-side"><h4>既存（行'+(sim.index+1)+'）</h4><p>'+escHtml(sim.item.info)+'</p></div>';
+      html+='<div class="compare-side"><h4>新規</h4><p>'+escHtml(c.bullet)+'</p></div></div>';
+      html+='<textarea id="merge_'+ci+'" rows="2" placeholder="最終テキストを入力..." style="margin-bottom:8px">'+escHtml(c.bullet)+'</textarea>';
+      html+='<button class="btn btn-sm btn-primary" onclick="doMergeSim('+ci+','+sim.index+')">この内容で既存を更新</button> ';
+      html+='<button class="btn btn-sm btn-outline" onclick="doSkipSim('+ci+')">新規追加</button>';
     }else{
-      html+='<p style="font-size:.85rem;margin:4px 0">譁ｰ隕剰ｿｽ蜉: '+escHtml(c.bullet)+'</p>';
-      html+='<button class="btn btn-sm btn-success" onclick="doSkipSim('+ci+')">譁ｰ隕剰ｿｽ蜉</button>';
+      html+='<p style="font-size:.85rem;margin:4px 0">新規追加: '+escHtml(c.bullet)+'</p>';
+      html+='<button class="btn btn-sm btn-success" onclick="doSkipSim('+ci+')">新規追加</button>';
     }
     html+='</div>';
   });
-  html+='<button class="btn btn-success" onclick="doFinishImport()" style="margin-top:8px">谿九ｊ繧貞・縺ｦ譁ｰ隕剰ｿｽ蜉縺励※螳御ｺ・/button></div>';
+  html+='<button class="btn btn-success" onclick="doFinishImport()" style="margin-top:8px">残りを全て新規追加して完了</button></div>';
   el.innerHTML+=html;
   window._importConflicts=conflicts;
 }
@@ -659,7 +647,7 @@ async function doMergeSim(conflictIdx,existingIdx){
     updateRow(existingIdx,'source',merged);
   }
   if(window._importConflicts)window._importConflicts[conflictIdx]._done=true;
-  toast('邨ｱ蜷医＠縺ｾ縺励◆','success');
+  toast('統合しました','success');
 }
 
 async function doSkipSim(conflictIdx){
@@ -668,7 +656,7 @@ async function doSkipSim(conflictIdx){
     addRow(c.bullet,new Date().toLocaleDateString('ja-JP'),importState.urls.join('\n'));
     c._done=true;
   }
-  toast('譁ｰ隕剰ｿｽ蜉縺励∪縺励◆','success');
+  toast('新規追加しました','success');
 }
 
 async function doFinishImport(){
@@ -677,10 +665,10 @@ async function doFinishImport(){
     return!window._importConflicts.find(c=>c.bulletIdx===i&&c._done);
   }).filter(b=>b.trim());
   if(remaining.length>0)appendKnowledgeFromBullets(remaining,new Date().toLocaleDateString('ja-JP'),importState.urls);
-  if(accessToken){try{await saveToDriveWithBackup('蜿悶ｊ霎ｼ縺ｿ螳御ｺ・)}catch(e){toast('Drive菫晏ｭ伜､ｱ謨・ '+e.message,'error')}}
+  if(accessToken){try{await saveToDriveWithBackup('取り込み完了')}catch(e){toast('Drive保存失敗: '+e.message,'error')}}
   importState={extracted_text:'',bullets:[],urls:[]};
   window._importConflicts=null;
-  toast('蜿悶ｊ霎ｼ縺ｿ螳御ｺ・,'success');
+  toast('取り込み完了','success');
   renderAll();
 }
 
@@ -693,27 +681,27 @@ async function doGeminiTest(){
   const el=document.getElementById('geminiTestResult');
   if(!el)return;
   const key=getGeminiKey();
-  if(!key){el.innerHTML='<div class="alert alert-danger">API Key縺梧悴險ｭ螳壹〒縺・/div>';return}
-  el.innerHTML='<div class="loading"></div> 繝・せ繝井ｸｭ...';
+  if(!key){el.innerHTML='<div class="alert alert-danger">API Keyが未設定です</div>';return}
+  el.innerHTML='<div class="loading"></div> テスト中...';
   try{
     const model=getGeminiModel();
     const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{text:'繝・せ繝医ゅ薫K縲阪→縺縺題ｿ斐＠縺ｦ縺上□縺輔＞縲・}]}]})
+      body:JSON.stringify({contents:[{parts:[{text:'テスト。「OK」とだけ返してください。'}]}]})
     });
     if(!r.ok){const t=await r.text();throw new Error(r.status+' '+t)}
     const d=await r.json();
-    const txt=d.candidates?.[0]?.content?.parts?.[0]?.text||'蠢懃ｭ斐↑縺・;
-    el.innerHTML='<div class="alert alert-success">謗･邯壽・蜉・ '+escHtml(txt)+'</div>';
-  }catch(e){el.innerHTML='<div class="alert alert-danger">謗･邯壼､ｱ謨・ '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doGeminiTest()" style="margin-top:8px">蜀崎ｩｦ陦・/button></div>'}
+    const txt=d.candidates?.[0]?.content?.parts?.[0]?.text||'応答なし';
+    el.innerHTML='<div class="alert alert-success">接続成功: '+escHtml(txt)+'</div>';
+  }catch(e){el.innerHTML='<div class="alert alert-danger">接続失敗: '+escHtml(e.message)+'<br><button class="btn btn-sm btn-warn" onclick="doGeminiTest()" style="margin-top:8px">再試行</button></div>'}
 }
 
 // ===== INIT =====
 function initApp(){
   restore();
   renderAll();
-  window.addEventListener('online',()=>{toast('繧ｪ繝ｳ繝ｩ繧､繝ｳ縺ｫ蠕ｩ蟶ｰ','success');renderAll()});
-  window.addEventListener('offline',()=>{toast('繧ｪ繝輔Λ繧､繝ｳ縺ｧ縺・,'error');renderAll()});
+  window.addEventListener('online',()=>{toast('オンラインに復帰','success');renderAll()});
+  window.addEventListener('offline',()=>{toast('オフラインです','error');renderAll()});
 }
 document.addEventListener('DOMContentLoaded',initApp);
 </script>
