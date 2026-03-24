@@ -403,6 +403,7 @@ function renderBook(){
   const isConn=driveState.status==='connected';
   let html='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px"><h2>📚 知恵の書</h2><div style="display:flex;gap:8px">'
     +'<button class="btn btn-sm btn-success" onclick="doAddRow()">＋ 行追加</button>'
+    +'<button class="btn btn-sm btn-outline" onclick="doExportForNotebookLM()" style="border-color:#00d4aa;color:#00d4aa">NotebookLM出力</button>'
     +'<button class="btn btn-sm btn-outline" onclick="doDownloadLocal()">ローカルへ保存</button>'
     +'<button class="btn btn-sm btn-primary" onclick="doSaveDrive()" '+(isConn?'':'disabled')+'>Driveへ保存</button></div></div>'
     +'<div class="input-group"><input type="text" id="bookSearch" placeholder="検索..." oninput="renderAll()"></div>';
@@ -519,6 +520,49 @@ function doDownloadLocal(){
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   toast('ローカルへダウンロードしました（'+ts+'）','success');
+async function findNotebookLMDoc(bookFolderId) {
+  const q="name='知恵の書_NotebookLM用' and '"+bookFolderId+"' in parents and trashed=false";
+  const r=await driveApiFetch('https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent(q)+'&fields=files(id,name)&spaces=drive');
+  const data=await r.json();
+  if(!data.files||data.files.length===0) return null;
+  return data.files[0].id;
+}
+
+async function doExportForNotebookLM(){
+  if(knowledgeBase.length===0){toast('データがありません','warn');return}
+  if(!accessToken){toast('先に設定タブでDriveに接続してください','warn');return}
+  let md = '知恵の書 ナレッジベース\n\n';
+  knowledgeBase.forEach((r,i)=>{
+    md += `[エントリー ${i+1}]\n`;
+    md += `記載日: ${r.date}\n`;
+    md += `情報: ${r.info}\n`;
+    if(r.source) md += `参考文献: ${r.source.replace(/\n/g, ', ')}\n`;
+    md += `\n`;
+  });
+  const blob=new Blob([md],{type:'text/plain'});
+  const btn = document.querySelector('button[onclick="doExportForNotebookLM()"]');
+  if(btn) btn.textContent = '同期中...';
+  
+  try {
+    if(!driveState.bookFolderId) await ensureDriveFolders();
+    let docId = await findNotebookLMDoc(driveState.bookFolderId);
+    
+    if(docId){
+      await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files/'+docId+'?uploadType=media',{method:'PATCH',headers:{'Content-Type':'text/plain'},body:blob});
+      toast('Drive上のNotebookLM用ドキュメントを更新しました（リンク同一）','success');
+    } else {
+      const meta={name:'知恵の書_NotebookLM用',parents:[driveState.bookFolderId],mimeType:'application/vnd.google-apps.document'};
+      const form=new FormData();
+      form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+      form.append('file',blob);
+      await driveApiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{method:'POST',body:form});
+      toast('Drive上にNotebookLM用ドキュメントを新規作成しました','success');
+    }
+  } catch(e) {
+    toast('NotebookLM同期失敗: '+e.message, 'error');
+  } finally {
+    if(btn) btn.textContent = 'NotebookLM出力';
+  }
 }
 
 async function doAsk(){
